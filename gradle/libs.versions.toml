@@ -1,0 +1,104 @@
+[versions]
+agp = "8.7.3"
+androidxEspressoCore = "3.6.1"
+androidxJunit = "1.2.1"
+androidxJunitVersion = "1.2.1"
+byteBuddy = "1.14.2"
+core = "1.6.1"
+espressoCoreVersion = "3.6.1"
+espressoIntents = "3.0.2"
+gson = "2.11.0"
+gsonVersion = "2.11.0"
+kotlin = "2.0.0"
+coreKtx = "1.15.0"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+kotlinxCoroutinesCore = "1.10.1"
+lifecycleRuntimeKtx = "2.8.7"
+activityCompose = "1.9.3"
+composeBom = "2024.12.01"
+materialIconsExtended = "1.7.6"
+mockitoCore = "5.15.2"
+navigationRuntimeKtx = "2.8.5"
+navigationCompose = "2.8.5"
+okhttp = "4.12.0"
+okhttpVersion = "4.12.0"
+appcompat = "1.7.0"
+composeMaterial3 = "1.0.0-alpha30"
+roomCompiler = "2.6.1"
+roomKtx = "2.6.1"
+roomRuntime = "2.6.1"
+rules = "1.0.2"
+runner = "1.6.2"
+runnerVersion = "1.0.2"
+securityCrypto = "1.0.0"
+securityCryptoVersion = "1.0.0"
+supportAnnotations = "28.0.0"
+uiautomator = "2.3.0"
+junitJunit = "4.12"
+junitKtx = "1.2.1"
+coreKtxVersion = "1.6.1"
+securityCryptoKtx = "1.0.0"
+roomKtxVersion = "2.7.0-alpha12"
+
+[libraries]
+androidx-core = { module = "androidx.test:core", version.ref = "core" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-espresso-core-v311 = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxEspressoCore" }
+androidx-espresso-core-v361 = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCoreVersion" }
+androidx-junit-v110 = { module = "androidx.test.ext:junit", version.ref = "androidxJunitVersion" }
+androidx-junit-v121 = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
+androidx-material = { module = "androidx.compose.material:material" }
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+androidx-room-compiler = { module = "androidx.room:room-compiler" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomKtx" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+androidx-runner = { module = "androidx.test:runner", version.ref = "runner" }
+androidx-security-crypto = { module = "androidx.security:security-crypto" }
+androidx-security-crypto-v100rc02 = { module = "androidx.security:security-crypto", version.ref = "securityCryptoVersion" }
+androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+byte-buddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byteBuddy" }
+bytebuddy-byte-buddy = { module = "net.bytebuddy:byte-buddy" }
+espresso-intents = { module = "com.android.support.test.espresso:espresso-intents", version.ref = "espressoIntents" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+gson-v289 = { module = "com.google.code.gson:gson", version.ref = "gsonVersion" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+material3 = { module = "androidx.compose.material3:material3" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-v4110 = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttpVersion" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
+junit-junit = { group = "junit", name = "junit", version.ref = "junitJunit" }
+androidx-junit-ktx = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "junitKtx" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
+rules = { module = "com.android.support.test:rules", version.ref = "rules" }
+runner = { module = "com.android.support.test:runner", version.ref = "runnerVersion" }
+core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtxVersion" }
+security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+support-annotations = { module = "com.android.support:support-annotations", version.ref = "supportAnnotations" }
+androidx-security-crypto-ktx = { group = "androidx.security", name = "security-crypto-ktx", version.ref = "securityCryptoKtx" }
+tink-android = { module = "com.google.crypto.tink:tink-android" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtxVersion" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+

@@ -1,0 +1,154 @@
+package com.ion606.workoutapp.managers
+
+import android.util.Log
+import com.google.gson.Gson
+import com.ion606.workoutapp.BuildConfig
+import com.ion606.workoutapp.helpers.URLHelpers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Headers.Companion.toHeaders
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.IOException
+import kotlin.coroutines.resume
+
+private const val TAG = "SyncManager"
+
+class SyncManager(private var baseURL: String? = null) {
+    private val headers = mutableMapOf("content-type" to "application/json");
+
+    // wrapped in a function so as to not accidentally change the base URL
+//    TODO: implement saving
+    fun changeBaseURL(newURL: String) {
+        this.baseURL = newURL;
+    }
+
+    fun getBaseURL(): String? {
+        return this.baseURL;
+    }
+
+    fun setHeader(headername: String, headerVal: String) {
+        this.headers[headername] = headerVal;
+    }
+
+    fun populateData(token: String, baseURL: String) {
+        this.changeBaseURL(baseURL);
+        this.setHeader("authorization", token);
+    }
+
+    suspend fun sendData(
+        payload: Map<String, Any>,
+        endpoint: String? = this.baseURL,
+        path: String? = null,
+        method: String = "POST",
+        authManager: AuthManager? = null
+    ): Pair<Boolean, Any?> {
+        val baseURLToUse = URLHelpers.transformURL(endpoint) ?: return Pair(false, "URL is null")
+
+        val jsonData: String
+        try {
+            jsonData = Gson().toJson(payload)
+        } catch (e: Exception) {
+            Log.d(TAG, "Error: Failed to serialize data: ${e.message}")
+            e.printStackTrace()
+            return Pair(false, "Failed to serialize data")
+        }
+
+        val requestBody = jsonData.toRequestBody("application/json".toMediaTypeOrNull())
+        val urlToUse = if (!path.isNullOrEmpty()) "$baseURLToUse/$path" else baseURLToUse
+
+        if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(TAG, "Debug: Sending a $method request to $urlToUse with data $jsonData")
+
+        val request = Request.Builder()
+            .url(urlToUse)
+            .headers(headers.toMap().toHeaders())
+            .method(method, if (method == "GET" || method == "HEAD") null else requestBody)
+            .build()
+
+        return suspendCancellableCoroutine { continuation ->
+            OkHttpClient().newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.d(TAG, "Error: Failed to sync data to $urlToUse: ${e.message}")
+                    e.printStackTrace()
+
+                    if (continuation.isActive) continuation.resume(Pair(false, "Failed to sync data"))
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    response.use { // Ensure the response body is closed
+                        if (response.isSuccessful) {
+                            val responseBody = response.body?.string()
+
+                            if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(TAG, "Debug: Data synced successfully: $responseBody")
+
+                            if (continuation.isActive) continuation.resume(Pair(true, responseBody))
+                            else null;
+                        } else {
+                            val errmsg = response.body?.string() ?: response.message
+                            Log.d(TAG, "Error: Server error. Code: ${response.code}, Message: ${errmsg}, Url: $urlToUse")
+
+                            if (errmsg.contains("Token expired", ignoreCase = true)) {
+                                Log.d(TAG, "Token expired. Attempting to refresh.")
+
+                                if (authManager == null) {
+                                    Log.d(TAG, "Auth manager is null. Cannot refresh token.")
+                                    if (continuation.isActive) continuation.resume(Pair(false, "Token expired"))
+                                    return
+                                }
+
+                                // Launch a coroutine to refresh the token
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    val refreshed = authManager.refreshToken()
+                                    if (refreshed) {
+                                        sendData(payload, endpoint, path, method, authManager).let {
+                                            if (continuation.isActive) continuation.resume(it)
+                                        }
+                                    } else {
+                                        Log.d(TAG, "Failed to refresh token. User needs to log in.")
+                                        if (continuation.isActive) continuation.resume(Pair(false, "Failed to refresh token"))
+                                    }
+                                }
+                            } else if (errmsg.contains("Invalid token", ignoreCase = true)) {
+                                Log.d(TAG, "Invalid token. User needs to log in.")
+
+                                if (continuation.isActive) continuation.resume(Pair(false, errmsg))
+                                else null;
+                            } else {
+                                if (continuation.isActive) continuation.resume(Pair(false, errmsg))
+                                else null;
+                            }
+                        }
+                    }
+                }
+            })
+        }
+    }
+
+
+    fun pingServer(): Boolean {
+        val u = this.baseURL;
+        if (u.isNullOrEmpty()) return false;
+        Log.d(TAG, "DEBUG: Pinging server at $u");
+
+        val request = Request.Builder()
+            .url("$u/ping")
+            .get()
+            .build();
+
+        return try {
+            val response = OkHttpClient().newCall(request).execute()
+            response.use { response.isSuccessful }
+        } catch (e: Exception) {
+            Log.d(TAG, "Error: Failed to ping server: $e")
+            e.printStackTrace()
+            false
+        }
+    }
+}

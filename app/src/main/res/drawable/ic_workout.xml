@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="800dp"
+    android:height="800dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Left handle -->
+    <path
+        android:pathData="M4,18 L8,18 L8,30 L4,30 Z"
+        android:fillColor="#000000" />
+
+    <!-- Left plate -->
+    <path
+        android:pathData="M8,14 L14,14 L14,34 L8,34 Z"
+        android:fillColor="#000000" />
+
+    <!-- Right plate -->
+    <path
+        android:pathData="M34,14 L40,14 L40,34 L34,34 Z"
+        android:fillColor="#000000" />
+
+    <!-- Right handle -->
+    <path
+        android:pathData="M40,18 L44,18 L44,30 L40,30 Z"
+        android:fillColor="#000000" />
+
+    <!-- Connecting bar -->
+    <path
+        android:pathData="M14,20 L34,20 L34,28 L14,28 Z"
+        android:fillColor="#000000" />
+</vector>
