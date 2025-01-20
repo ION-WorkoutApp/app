@@ -74,7 +74,8 @@ class MainActivity : ComponentActivity() {
                             userManager,
                             sm,
                             dao,
-                            navController
+                            navController,
+                            this@MainActivity
                         )
                     }
                     composable("restart_app") {

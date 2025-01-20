@@ -325,6 +325,15 @@ class LogScreen {
                 DarkThemeWorkoutResponse(userManager, showLog.value!!, navController)
             }
 
+            val err = remember { mutableStateOf(false) }
+            if (err.value) {
+                Alerts.ShowAlert({
+                    userManager.clearPreferences();
+                    navController.navigate("login");
+                    err.value = false;
+                }, "Failed to load workouts", "Please log out and try again!")
+            }
+
             LaunchedEffect("userlog") {
                 val ulog = syncManager.sendData(emptyMap(), path = "workouts", method = "GET")
                 try {
@@ -336,9 +345,9 @@ class LogScreen {
 
                         if (parsedResponse != null && parsedResponse.success) {
                             showLog.value = parsedResponse
-
                             Log.d("parsedResponse", "Parsed response: $parsedResponse")
                         } else {
+                            err.value = true
                             Log.e("LogScreen", "Failed to parse workout response")
                         }
                     } else {

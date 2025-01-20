@@ -98,6 +98,8 @@ fun ExerciseBox(
                                 coroutineScope.launch {
                                     when {
                                         xOffsetAnim.value > dragThreshold -> {
+                                            Log.d(TAG, "DELETING EXERCISE $exercise")
+
                                             // Remove the item on right swipe
                                             openExercise.value = null
                                             exercises.value = exercises.value.filter { it != exercise }

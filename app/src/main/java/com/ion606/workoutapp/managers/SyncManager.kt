@@ -43,6 +43,22 @@ class SyncManager(private var baseURL: String? = null) {
         this.setHeader("authorization", token);
     }
 
+    // helper callback function for sendData
+    fun sendDataCB(
+        scope: CoroutineScope,
+        payload: Map<String, Any>,
+        endpoint: String? = this.baseURL,
+        path: String? = null,
+        method: String = "POST",
+        authManager: AuthManager? = null,
+        cb: (Pair<Boolean, Any?>) -> Unit
+    ) {
+        scope.launch {
+            val result = sendData(payload, endpoint, path, method, authManager)
+            cb(result)
+        }
+    }
+
     suspend fun sendData(
         payload: Map<String, Any>,
         endpoint: String? = this.baseURL,
@@ -64,7 +80,10 @@ class SyncManager(private var baseURL: String? = null) {
         val requestBody = jsonData.toRequestBody("application/json".toMediaTypeOrNull())
         val urlToUse = if (!path.isNullOrEmpty()) "$baseURLToUse/$path" else baseURLToUse
 
-        if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(TAG, "Debug: Sending a $method request to $urlToUse with data $jsonData")
+        if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
+            TAG,
+            "Debug: Sending a $method request to $urlToUse with data $jsonData"
+        )
 
         val request = Request.Builder()
             .url(urlToUse)
@@ -78,7 +97,12 @@ class SyncManager(private var baseURL: String? = null) {
                     Log.d(TAG, "Error: Failed to sync data to $urlToUse: ${e.message}")
                     e.printStackTrace()
 
-                    if (continuation.isActive) continuation.resume(Pair(false, "Failed to sync data"))
+                    if (continuation.isActive) continuation.resume(
+                        Pair(
+                            false,
+                            "Failed to sync data"
+                        )
+                    )
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -86,20 +110,32 @@ class SyncManager(private var baseURL: String? = null) {
                         if (response.isSuccessful) {
                             val responseBody = response.body?.string()
 
-                            if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(TAG, "Debug: Data synced successfully: $responseBody")
+                            if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
+                                TAG,
+                                "Debug: Data synced successfully: $responseBody"
+                            )
 
                             if (continuation.isActive) continuation.resume(Pair(true, responseBody))
                             else null;
                         } else {
                             val errmsg = response.body?.string() ?: response.message
-                            Log.d(TAG, "Error: Server error. Code: ${response.code}, Message: ${errmsg}, Url: $urlToUse")
+                            Log.d(
+                                TAG,
+                                "Error: Server error. Code: ${response.code}, Message: ${errmsg}, Url: $urlToUse"
+                            )
 
                             if (errmsg.contains("Token expired", ignoreCase = true)) {
                                 Log.d(TAG, "Token expired. Attempting to refresh.")
 
                                 if (authManager == null) {
                                     Log.d(TAG, "Auth manager is null. Cannot refresh token.")
-                                    if (continuation.isActive) continuation.resume(Pair(false, "Token expired"))
+                                    if (continuation.isActive) continuation.resume(
+                                        Pair(
+                                            false,
+                                            "Token expired"
+                                        )
+                                    )
+                                    
                                     return
                                 }
 
@@ -112,7 +148,12 @@ class SyncManager(private var baseURL: String? = null) {
                                         }
                                     } else {
                                         Log.d(TAG, "Failed to refresh token. User needs to log in.")
-                                        if (continuation.isActive) continuation.resume(Pair(false, "Failed to refresh token"))
+                                        if (continuation.isActive) continuation.resume(
+                                            Pair(
+                                                false,
+                                                "Failed to refresh token"
+                                            )
+                                        )
                                     }
                                 }
                             } else if (errmsg.contains("Invalid token", ignoreCase = true)) {

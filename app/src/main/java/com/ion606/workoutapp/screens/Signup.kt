@@ -151,6 +151,7 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                         value = name.value,
                         onValueChange = { name.value = it },
                         label = { Text("Name") },
+                        maxLines = 1,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -159,6 +160,7 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                         onValueChange = { email.value = it },
                         label = { Text("Email") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        maxLines = 1,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -167,6 +169,7 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                         onValueChange = { password.value = it },
                         label = { Text("Password") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        maxLines = 1,
                         visualTransformation = if (passwordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             val image = if (passwordVisible.value)
@@ -201,7 +204,8 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                         onValueChange = { age.value = it },
                         label = { Text("Age") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Dropdown("Gender", listOf("Male", "Female", "Non-Binary", "Other"), gender)
@@ -211,7 +215,8 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                         onValueChange = { height.value = it },
                         label = { Text("Height (cm)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
@@ -219,7 +224,8 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                         onValueChange = { weight.value = it },
                         label = { Text("Weight (kg)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -253,7 +259,8 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                         value = serverUrl.value,
                         onValueChange = { serverUrl.value = it },
                         label = { Text("Server URL") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(

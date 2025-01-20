@@ -83,6 +83,7 @@ fun WorkoutHomeScreen(
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutTopBar() {
@@ -102,8 +103,7 @@ fun WorkoutBottomBar(navController: NavController, isActive: Int = 0) {
     BottomAppBar {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

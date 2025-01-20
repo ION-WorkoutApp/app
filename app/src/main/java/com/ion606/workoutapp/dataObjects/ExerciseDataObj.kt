@@ -17,6 +17,7 @@ import androidx.room.TypeConverters
 import androidx.room.Update
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 
@@ -66,6 +67,9 @@ interface ActiveExerciseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(exercise: ActiveExercise)
+
+    @Query("SELECT * FROM ActiveExercise")
+    fun getAllAsFlow(): Flow<List<ActiveExercise>>
 
     @Update
     suspend fun update(exercise: ActiveExercise)

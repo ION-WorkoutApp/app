@@ -61,6 +61,33 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "ExercisePopup"
 
+
+// TODO: come up with a better way to give rep/set recommendations
+fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<ActiveExercise> {
+    val setsCount = 5
+    val repList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
+        ExerciseSetDataObj(i)
+    }
+    val timesList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
+        ExerciseSetDataObj(i)
+    }
+    val weightsList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
+        ExerciseSetDataObj(i)
+    }
+
+    return checkedExercises.map {
+        ActiveExercise(
+            exercise = it,
+            sets = setsCount,
+            setsDone = 0,
+            reps = repList.toMutableList(),
+            times = timesList.toMutableList(),
+            weight = weightsList.toMutableList()
+        )
+    }
+}
+
+
 @SuppressLint("NotConstructor")
 class ExercisePickerPopup {
     companion object {
@@ -142,29 +169,7 @@ class ExercisePickerPopup {
                         Button(
                             onClick = {
                                 //  Add checked exercises to the activity list
-                                // TODO: come up with a better way to give rep/set recommendations
-
-                                val setsCount = 5
-                                val repList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
-                                    ExerciseSetDataObj(i)
-                                }
-                                val timesList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
-                                    ExerciseSetDataObj(i)
-                                }
-                                val weightsList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
-                                    ExerciseSetDataObj(i)
-                                }
-
-                                val toAdd = state.checkedExercises.map {
-                                    ActiveExercise(
-                                        exercise = it,
-                                        sets = setsCount,
-                                        setsDone = 0,
-                                        reps = repList.toMutableList(),
-                                        times = timesList.toMutableList(),
-                                        weight = weightsList.toMutableList()
-                                    )
-                                }
+                                val toAdd = exercisesToActiveExercises(state.checkedExercises.toList());
 
                                 coroutineScope.launch {
                                     dao.insertAll(toAdd)

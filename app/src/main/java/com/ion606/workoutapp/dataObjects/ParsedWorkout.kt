@@ -3,8 +3,7 @@ package com.ion606.workoutapp.dataObjects
 import com.google.gson.annotations.SerializedName
 
 data class ParsedWorkoutResponse(
-    val success: Boolean,
-    val workouts: List<ParsedActiveExercise>
+    val success: Boolean, val workouts: List<ParsedActiveExercise>
 )
 
 data class ParsedActiveExercise(
@@ -44,3 +43,17 @@ data class ParsedSetData(
     @SerializedName("restTime") val restTime: Int = 0
 )
 
+data class SavedWorkoutResponse(
+    val success: Boolean, val workouts: List<Workout>
+)
+
+data class Workout(
+    @SerializedName("_id") val id: String,
+    @SerializedName("exercises") val exercises: List<Exercise>,
+    @SerializedName("totalTime") val totalTime: Int,
+    @SerializedName("isSaved") val isSaved: Boolean,
+    @SerializedName("workoutName") val workoutName: String,
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("updatedAt") val updatedAt: String,
+    @SerializedName("__v") val version: Int
+)
