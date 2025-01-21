@@ -1,5 +1,8 @@
 package com.ion606.workoutapp.screens
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -17,7 +21,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.BuildConfig
 import com.ion606.workoutapp.managers.DataManager
@@ -28,10 +38,11 @@ import kotlinx.coroutines.withContext
 private const val TAG = "DetailsScreen"
 
 @Composable
-fun DetailsScreen(navController: NavController, dataManager: DataManager, userManager: UserManager) {
+fun DetailsScreen(navController: NavController, dataManager: DataManager, userManager: UserManager, context: Context) {
     val isLoggedIn = dataManager.isLoggedIn()
     val mainText = remember { mutableStateOf("") }
     val subText = remember { mutableStateOf("") }
+    val serverLink = remember { mutableStateOf<String?>(null) }
     val fetchFailed = remember { mutableStateOf(false) }
 
     LaunchedEffect(isLoggedIn) {
@@ -46,8 +57,9 @@ fun DetailsScreen(navController: NavController, dataManager: DataManager, userMa
                 if (!serverPingSuccess) {
                     withContext(Dispatchers.Main) {
                         mainText.value = "Failed to connect to server"
-                        subText.value = "Please check your internet connection.\nIf you're the server admin, please check the server logs.\n\naddr: ${dataManager.loadURL()}"
+                        subText.value = "Please check your internet connection.\nIf you're the server admin, please check the server logs."
                         fetchFailed.value = true
+                        serverLink.value = dataManager.loadURL()
                     }
                     Log.d(TAG, "Failed to ping server")
                     return@withContext
@@ -114,8 +126,41 @@ fun DetailsScreen(navController: NavController, dataManager: DataManager, userMa
                 text = subText.value,
                 style = MaterialTheme.typography.bodyLarge
             )
+
             Spacer(modifier = Modifier.height(16.dp))
+
             if (fetchFailed.value) {
+                val url = dataManager.loadURL()!!;
+
+                val annotatedString = buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = Color.White)) {
+                        append("Server URL: ")
+                    }
+
+                    pushStringAnnotation(
+                        tag = "URL",
+                        annotation = url
+                    )
+                    withStyle(style = SpanStyle(color = Color(red = 173, green = 216, blue = 230), textDecoration = TextDecoration.Underline)) {
+                        append(url)
+                    }
+                    pop()
+                }
+
+                ClickableText(
+                    text = annotatedString,
+                    onClick = { offset ->
+                        annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                            .firstOrNull()?.let { annotation ->
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
+                                context.startActivity(intent)
+                            }
+                    },
+                    style = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Button(onClick = {
                     navController.navigate("restart_app")
                 }) {

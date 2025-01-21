@@ -26,7 +26,7 @@ import com.ion606.workoutapp.ui.theme.WorkoutAppTheme
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnsafeIntentLaunch")
     override fun onCreate(savedInstanceState: Bundle?) {
-        val sm = SyncManager("");
+        val sm = SyncManager("", this@MainActivity);
         val dataManager = DataManager(this@MainActivity, sm); // Pass the context
         val userManager = UserManager(this@MainActivity, dataManager, sm);
         val dao = WorkoutDatabase.getInstance(this@MainActivity)?.activeExerciseDao()
@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                         if (!controller.graph.contains(destination)) controller.navigate("not_found")
                     }
                     composable("home") { HomeScreen(navController, dataManager) }
-                    composable("details") { DetailsScreen(navController, dataManager, userManager) }
+                    composable("details") { DetailsScreen(navController, dataManager, userManager, this@MainActivity) }
                     composable("login_signup") { LoginSignupScreen(navController) }
                     composable("signup") { Signup(navController = navController, dataManager) }
                     composable("login") {
@@ -89,7 +89,8 @@ class MainActivity : ComponentActivity() {
                         com.ion606.workoutapp.screens.LogScreen.CreateScreen(
                             userManager,
                             sm,
-                            navController
+                            navController,
+                            this@MainActivity
                         )
                     }
 

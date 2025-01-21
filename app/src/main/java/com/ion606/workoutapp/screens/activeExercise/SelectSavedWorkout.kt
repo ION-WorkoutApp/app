@@ -55,6 +55,15 @@ fun SelectWorkoutPopup(
     var workouts by remember { mutableStateOf(workoutsInp) }
     val scope = rememberCoroutineScope()
 
+    if (workouts.isEmpty()) {
+        return Alerts.ShowAlert(
+            { onDismissRequest() },
+            "No Saved Workouts",
+            "You have not saved any workouts yet. Please save a workout to use it here.",
+            true
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -157,7 +166,7 @@ fun SelectWorkoutPopup(
                                 if (triggerRename.value) {
                                     val newName = remember { mutableStateOf("") }
 
-                                    Alerts.createAlertDialog("Rename Workout", context) {
+                                    Alerts.CreateAlertDialog("Rename Workout", context) {
                                         if (!it.isNullOrEmpty()) {
                                             newName.value = it
                                         } else {

@@ -59,17 +59,9 @@ fun WorkoutHomeScreen(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
             ) {
-                Text("New Workout")
+                Text("New/Saved Workout")
             }
-            Button(
-                onClick = { TODO() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                enabled = false
-            ) {
-                Text("Use Saved Workout")
-            }
+
             Button(
                 onClick = { TODO() },
                 modifier = Modifier

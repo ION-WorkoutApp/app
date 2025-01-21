@@ -3,9 +3,14 @@ package com.ion606.workoutapp.helpers
 import android.app.AlertDialog
 import android.content.Context
 import android.text.InputType
+import android.view.Gravity
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.NumberPicker
+import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -23,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,23 +42,41 @@ class Alerts {
         fun ShowAlert(
             onClick: (Boolean) -> Unit,
             title: String = "Quit Workout?",
-            text: String = "Are you sure you want to end the workout? Your progress will be lost!"
+            text: String = "Are you sure you want to end the workout? Your progress will be lost!",
+            oneButton: Boolean = false
         ) {
             androidx.compose.material.AlertDialog(
                 modifier = Modifier.background(Color.DarkGray),
                 onDismissRequest = { onClick(true) },
                 title = { Text(text = title) },
                 text = { Text(text = text) },
-                confirmButton = {
-                    Button(
-                        onClick = { onClick(true) }
-                    ) { Text("Confirm") }
-                },
-                dismissButton = {
-                    Button(onClick = { onClick(false) }) {
-                        Text("Cancel")
+                confirmButton = if (oneButton) {
+                    // center the button if there's only one
+                    {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Button(onClick = { onClick(true) }) {
+                                Text("Confirm")
+                            }
+                        }
                     }
-                }
+                } else {
+                    // align normally when there are two buttons
+                    {
+                        Button(onClick = { onClick(true) }) {
+                            Text("Confirm")
+                        }
+                    }
+                },
+                dismissButton = if (!oneButton) {
+                    {
+                        Button(onClick = { onClick(false) }) {
+                            Text("Cancel")
+                        }
+                    }
+                } else null
             )
         }
 
@@ -111,39 +135,71 @@ class Alerts {
         }
 
         @Composable
-        fun createAlertDialog(
+        fun CreateAlertDialog(
             title: String = "Title",
             context: Context,
+            isTimeInput: Boolean = false,
             CB: (uText: String?) -> Unit
         ) {
-            // manage dialog state
-            var showDialog by remember { mutableStateOf(true) }
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+            builder.setTitle(title)
 
-            if (showDialog) {
-                val builder: AlertDialog.Builder = AlertDialog.Builder(context)
-                builder.setTitle(title)
+            if (isTimeInput) {
+                // create a layout for minute and second inputs
+                val container = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(16, 16, 16, 16)
+                    gravity = Gravity.CENTER
+                }
 
-                val input = EditText(context)
-                input.inputType =
-                    InputType.TYPE_CLASS_TEXT // or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                // minute picker
+                val minutePicker = NumberPicker(context).apply {
+                    minValue = 0
+                    maxValue = 59
+                }
+                container.addView(minutePicker)
+
+                // add a colon separator for readability
+                val colonView = TextView(context).apply {
+                    text = ":"
+                    textSize = 20f
+                    setPadding(8, 0, 8, 0)
+                }
+                container.addView(colonView)
+
+                // second picker
+                val secondPicker = NumberPicker(context).apply {
+                    minValue = 0
+                    maxValue = 59
+                }
+                container.addView(secondPicker)
+
+                builder.setView(container)
+
+                builder.setPositiveButton("OK") { _, _ ->
+                    // get the selected minute and second
+                    val minute = minutePicker.value
+                    val second = secondPicker.value
+                    CB("${minute * 60 + second}")
+                }
+            } else {
+                // create an edit text for text input
+                val input = EditText(context).apply {
+                    inputType = InputType.TYPE_CLASS_TEXT
+                }
                 builder.setView(input)
 
                 builder.setPositiveButton("OK") { _, _ ->
                     CB(input.text.toString())
-                    showDialog = false // close the dialog
                 }
-                builder.setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.cancel()
-                    CB(null)
-                    showDialog = false // close the dialog
-                }
-
-                builder.setOnDismissListener {
-                    showDialog = false // ensure the dialog doesn't reappear
-                }
-
-                builder.show()
             }
+
+            builder.setNegativeButton("Cancel") { dialog, _ ->
+                dialog.cancel()
+                CB("")
+            }
+
+            builder.show()
         }
     }
 }

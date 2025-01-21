@@ -1,5 +1,6 @@
 package com.ion606.workoutapp.managers
 
+import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
 import com.ion606.workoutapp.BuildConfig
@@ -21,8 +22,13 @@ import kotlin.coroutines.resume
 
 private const val TAG = "SyncManager"
 
-class SyncManager(private var baseURL: String? = null) {
+class SyncManager(private var baseURL: String? = null, private var context : Context? = null) {
     private val headers = mutableMapOf("content-type" to "application/json");
+    private var authManager: AuthManager? = null;
+
+    init {
+        if (context != null) this.authManager = AuthManager(context!!, this);
+    }
 
     // wrapped in a function so as to not accidentally change the base URL
 //    TODO: implement saving
@@ -50,7 +56,7 @@ class SyncManager(private var baseURL: String? = null) {
         endpoint: String? = this.baseURL,
         path: String? = null,
         method: String = "POST",
-        authManager: AuthManager? = null,
+        authManager: AuthManager? = this.authManager,
         cb: (Pair<Boolean, Any?>) -> Unit
     ) {
         scope.launch {
@@ -176,20 +182,29 @@ class SyncManager(private var baseURL: String? = null) {
     fun pingServer(): Boolean {
         val u = this.baseURL;
         if (u.isNullOrEmpty()) return false;
-        Log.d(TAG, "DEBUG: Pinging server at $u");
 
-        val request = Request.Builder()
-            .url("$u/ping")
-            .get()
-            .build();
+        // try pinging three times
+        for (i in 1..3) {
+            Log.d(TAG, "DEBUG: Pinging server at $u");
 
-        return try {
-            val response = OkHttpClient().newCall(request).execute()
-            response.use { response.isSuccessful }
-        } catch (e: Exception) {
-            Log.d(TAG, "Error: Failed to ping server: $e")
-            e.printStackTrace()
-            false
+            val request = Request.Builder()
+                .url("$u/ping")
+                .head()
+                .build();
+
+            try {
+                val response = OkHttpClient().newCall(request).execute()
+                if (response.use { response.isSuccessful }) return true
+                else Log.d(TAG, "Error: Failed to ping server on attempt $i")
+            } catch (e: Exception) {
+                Log.d(TAG, "Error: Failed to ping server with error $e on attempt $i")
+                e.printStackTrace()
+            }
+
+            // wait 1 second before trying again
+            Thread.sleep(1000)
         }
+
+        return false;
     }
 }

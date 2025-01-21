@@ -111,7 +111,7 @@ fun StartTimer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .padding(16.dp)
+//                    .padding(16.dp)
                     .align(Alignment.BottomCenter), // Align the card at the bottom
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFF1E1E1E)

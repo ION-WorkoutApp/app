@@ -1,6 +1,7 @@
 package com.ion606.workoutapp.screens
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +47,7 @@ import com.ion606.workoutapp.dataObjects.ParsedExercise
 import com.ion606.workoutapp.dataObjects.ParsedWorkoutResponse
 import com.ion606.workoutapp.elements.CreateWorkoutLogDropdown
 import com.ion606.workoutapp.helpers.Alerts
+import com.ion606.workoutapp.helpers.Alerts.Companion.CreateAlertDialog
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
@@ -72,15 +73,15 @@ fun parseWorkoutResponse(json: String): ParsedWorkoutResponse? {
 
 @Composable
 fun DarkThemeWorkoutResponse(
+    syncManager: SyncManager,
     userManager: UserManager,
     response: ParsedWorkoutResponse,
-    navController: NavHostController
+    navController: NavHostController,
+    context: Context
 ) {
-    Scaffold(
-        bottomBar = {
-            WorkoutBottomBar(navController, 1)
-        }
-    ) { innerPadding ->
+    Scaffold(bottomBar = {
+        WorkoutBottomBar(navController, 1)
+    }) { innerPadding ->
         if (response.success && response.workouts.isNotEmpty()) {
             Box(
                 modifier = Modifier
@@ -90,7 +91,7 @@ fun DarkThemeWorkoutResponse(
             ) {
                 LazyColumn {
                     items(response.workouts) { workout ->
-                        WorkoutCard(workout, userManager, navController)
+                        WorkoutCard(workout, userManager, syncManager, navController, context)
                     }
                 }
             }
@@ -99,8 +100,7 @@ fun DarkThemeWorkoutResponse(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .background(Color(0xFF121212)),
-                contentAlignment = Alignment.Center
+                    .background(Color(0xFF121212)), contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = if (response.success) "No workouts available" else "Failed to load workouts",
@@ -117,7 +117,9 @@ fun DarkThemeWorkoutResponse(
 fun WorkoutCard(
     workout: ParsedActiveExercise,
     userManager: UserManager,
-    navController: NavHostController
+    syncManager: SyncManager,
+    navController: NavHostController,
+    context: Context
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -130,14 +132,56 @@ fun WorkoutCard(
         var errored by remember { mutableStateOf<String?>(null) }
         val scope = rememberCoroutineScope()
 
+        val savedWorkout = remember { mutableListOf<ParsedActiveExercise>() }
+        if (savedWorkout.isNotEmpty()) {
+            var workoutName by remember { mutableStateOf<String?>(null) }
+            var error by remember { mutableStateOf("") }
+
+            CreateAlertDialog(
+                "Enter saved workout name", context
+            ) {
+                if (!it.isNullOrEmpty()) workoutName = it
+                else error = "Failed to read workout name"
+            }
+
+            if (error.isNotEmpty()) {
+                CreateAlertDialog(
+                    error, context
+                ) {
+                    error = ""
+                }
+            } else if (!workoutName.isNullOrEmpty()) {
+                LaunchedEffect("saveworkoutsend") {
+                    scope.launch {
+                        val r = syncManager.sendData(
+                            mapOf(
+                                "workout" to mapOf(
+                                    "exercises" to savedWorkout, "totalTime" to 0
+                                ), "workoutname" to workoutName.toString()
+                            ), path = "savedworkouts"
+                        )
+
+                        if (r.first) {
+                            error = "Successfully saved workout"
+                            savedWorkout.clear()
+                        } else error = r.second.toString()
+
+                        Log.d("SAVE RESULT", r.toString())
+                    }
+                }
+            }
+        }
+
         if (visible) {
             Box(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                ) {
                     Text(
                         text = "Workout on ${formatTimestamp(workout.createdAt)} at ${
                             formatTimestamp(
-                                workout.createdAt,
-                                true
+                                workout.createdAt, true
                             )
                         }",
                         fontSize = 16.sp,
@@ -167,14 +211,40 @@ fun WorkoutCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                CreateWorkoutLogDropdown(
-                    "...",
+                var editTime by remember { mutableStateOf(false) }
+
+                if (editTime) {
+                    CreateAlertDialog(
+                        title = "New Workout Time",
+                        context = context,
+                        isTimeInput = true
+                    ) {
+                        Log.d("EditTime", "New Workout Time: $it")
+                        scope.launch {
+                            val r = syncManager.sendData(
+                                mapOf("workoutId" to workout.id, "newTime" to it.toString()),
+                                path = "workout",
+                                method = "PUT"
+                            )
+
+                            if (r.first) {
+                                visible = false
+                                navController.navigate("log")
+                            } else errored = r.second.toString()
+
+                            editTime = false
+                        }
+                    }
+                }
+
+                CreateWorkoutLogDropdown("...",
                     Modifier
                         .padding(16.dp)
                         .align(Alignment.TopEnd),
-                    { Log.d(TAG, "Edit workout") },
+                    context,
+                    { editTime = true },
                     {
                         scope.launch {
                             val r = userManager.deleteWorkout(workout)
@@ -183,8 +253,18 @@ fun WorkoutCard(
                                 navController.navigate("log")
                             } else errored = r.second.toString();
                         }
-                    }
-                )
+                    },
+                    {
+                        val toSave = workout.exercises.map {
+                            mapOf(
+                                "exercise" to it,
+                                "sets" to it.sets,
+                                "perset" to if (it.timeBased) it.times else it.reps
+                            )
+                        }
+
+                        Log.d("SAVING", toSave.toString())
+                    })
             }
         } else if (!errored.isNullOrEmpty()) {
             Alerts.ShowAlert({ errored = null }, "Failed to delete workout", errored!!);
@@ -317,12 +397,15 @@ class LogScreen {
         fun CreateScreen(
             userManager: UserManager,
             syncManager: SyncManager,
-            navController: NavHostController
+            navController: NavHostController,
+            context: Context
         ) {
             val showLog = remember { mutableStateOf<ParsedWorkoutResponse?>(null) }
 
             if (showLog.value != null) {
-                DarkThemeWorkoutResponse(userManager, showLog.value!!, navController)
+                DarkThemeWorkoutResponse(
+                    syncManager, userManager, showLog.value!!, navController, context
+                )
             }
 
             val err = remember { mutableStateOf(false) }

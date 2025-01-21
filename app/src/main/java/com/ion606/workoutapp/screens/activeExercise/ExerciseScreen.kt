@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,8 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.DropdownMenu
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.gson.Gson
@@ -41,7 +44,8 @@ import com.ion606.workoutapp.dataObjects.ActiveExerciseDao
 import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
 import com.ion606.workoutapp.dataObjects.Workout
 import com.ion606.workoutapp.helpers.Alerts
-import com.ion606.workoutapp.helpers.Alerts.Companion.createAlertDialog
+import com.ion606.workoutapp.helpers.Alerts.Companion.CreateAlertDialog
+import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.WorkoutBottomBar
@@ -55,6 +59,13 @@ suspend fun List<ActiveExercise>.saveAll(dao: ActiveExerciseDao) {
     for (exercise in this) {
         dao.insert(exercise)
     }
+}
+
+
+class WorkoutTimerObject {
+    var time by mutableIntStateOf(0)
+    var totalTime by mutableIntStateOf(0)
+    var paused by mutableStateOf(false)
 }
 
 
@@ -78,11 +89,23 @@ class ExerciseScreen {
             val expandDropdown = remember { mutableStateOf(false) }
             val endWorkout = remember { mutableIntStateOf(0) }
             val savedWorkout = remember { mutableListOf<Map<String, Any?>?>() }
+            val workoutTime = remember { mutableStateOf(WorkoutTimerObject()) }
 
             // Handle back navigation
             BackHandler {
                 if (exercises.value.isEmpty()) navController.navigate("home")
                 else showExitConfirmation.value = true
+            }
+
+            // timer logic: count up every second
+            LaunchedEffect(Unit) {
+                while (endWorkout.intValue == 0) {
+                    kotlinx.coroutines.delay(1000L) // wait for 1 second
+                    if (!workoutTime.value.paused) {
+                        workoutTime.value.time++
+                    }
+                    workoutTime.value.totalTime++
+                }
             }
 
             // Exit confirmation dialog
@@ -113,7 +136,7 @@ class ExerciseScreen {
                 var workoutName by remember { mutableStateOf<String?>(null) }
                 var error by remember { mutableStateOf("") }
 
-                createAlertDialog(
+                CreateAlertDialog(
                     "Enter saved workout name", context
                 ) {
                     if (!it.isNullOrEmpty()) workoutName = it
@@ -121,7 +144,7 @@ class ExerciseScreen {
                 }
 
                 if (error.isNotEmpty()) {
-                    createAlertDialog(
+                    CreateAlertDialog(
                         error, context
                     ) {
                         error = ""
@@ -160,9 +183,9 @@ class ExerciseScreen {
                             return@launch
                         }
 
-                        val totalTime = 12123123123
+                        val totalTime = workoutTime.value.time
                         val toSend = mapOf(
-                            "exercises" to dao.getAll(), "totalTime" to totalTime
+                            "exercises" to dao.getAll(), "totalTime" to totalTime, "workoutTime" to workoutTime.value.time
                         )
                         Log.d("SAVING", toSend.toString())
                         val r = syncManager.sendData(toSend, path = "workout")
@@ -186,6 +209,7 @@ class ExerciseScreen {
                     }
                 }
             } else if (endWorkout.intValue == 2) {
+                // end the workout without saving
                 LaunchedEffect("endworkout") {
                     coroutneScope.launch {
                         dao.getAll().forEach { exercise ->
@@ -225,12 +249,20 @@ class ExerciseScreen {
                             ) {
                                 Text("+")
                             }
-                            Spacer(modifier = Modifier.size(20.dp))
-                            Button(onClick = { endWorkout.intValue = 1 }) {
-                                Text("End")
-                            }
 
-                            Spacer(modifier = Modifier.weight(1f)) // Pushes the three-dot button to the right
+                            Text(text = convertSecondsToTimeString(workoutTime.value.time),
+                                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                                color = if (workoutTime.value.paused) Color.LightGray else Color.White,
+                                textAlign = TextAlign.Center,
+                                fontFamily = FontFamily.Monospace,
+                                modifier = Modifier
+                                    .padding(top = 5.dp)
+                                    .weight(1f) // Take up remaining space
+                                    .clickable {
+                                        workoutTime.value.paused = !workoutTime.value.paused
+                                    })
+
+//                            Spacer(modifier = Modifier.weight(1f)) // Pushes the three-dot button to the right
 
                             Box {
                                 Button(onClick = { expandDropdown.value = true }) {
@@ -258,7 +290,12 @@ class ExerciseScreen {
                                         }
 
                                         expandDropdown.value = false
-                                    }, text = { Text("Save Workout", color = Color.Black) })
+                                    }, text = { Text("Save Workout", color = Color.White) })
+
+                                    DropdownMenuItem(onClick = {
+                                        endWorkout.intValue = 1
+                                        expandDropdown.value = false
+                                    }, text = { Text("Complete Workout", color = Color.White) })
                                 }
                             }
                         }
@@ -301,9 +338,7 @@ class ExerciseScreen {
                             SelectWorkoutPopup(savedWorkouts.value!!, {
                                 exercisesToAdd.value =
                                     exercisesToActiveExercises(it.exercises.toList());
-                            }, { savedWorkouts.value = null },
-                                syncManager,
-                                context
+                            }, { savedWorkouts.value = null }, syncManager, context
                             )
                         }
 
@@ -347,6 +382,7 @@ class ExerciseScreen {
 
             if (openExercise.value != null) {
                 DisplayActiveExercise.DisplayActiveExerciseScreen(activeExercise = openExercise,
+                    context = context,
                     triggerExerciseSave = { exercise: ActiveExercise ->
                         Log.d(
                             TAG, "Saving exercise (in ExerciseScreen): ${exercise.exercise.title}"
