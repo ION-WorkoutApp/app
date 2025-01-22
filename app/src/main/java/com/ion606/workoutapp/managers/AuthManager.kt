@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.navigation.NavController
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.ion606.workoutapp.helpers.URLHelpers
@@ -15,20 +16,30 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
     private val sharedPreferences: SharedPreferences
 
     init {
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-        var tempSharedPreferences: SharedPreferences;
-        try {
-            tempSharedPreferences = EncryptedSharedPreferences.create(
+        val masterKeyAlias = try {
+            MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        } catch (e: Exception) {
+            Log.e(TAG, "KeyStore error. Resetting KeyStore.", e)
+            context.deleteSharedPreferences("AppData")
+            MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC) // Regenerate the key
+        }
+
+        sharedPreferences = try {
+            EncryptedSharedPreferences.create(
                 "AppData",
                 masterKeyAlias,
                 context,
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Failed to decrypt key. Clearing preferences.", e)
-            context.deleteSharedPreferences("AppData") // Delete the corrupted file
-            tempSharedPreferences = EncryptedSharedPreferences.create(
+        } catch (e: Exception) {
+            Log.e(
+                TAG,
+                "Failed to initialize EncryptedSharedPreferences. Clearing corrupted data.",
+                e
+            )
+            context.deleteSharedPreferences("AppData")
+            EncryptedSharedPreferences.create(
                 "AppData",
                 masterKeyAlias,
                 context,
@@ -36,7 +47,6 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         }
-        sharedPreferences = tempSharedPreferences
     }
 
     data class AuthResult(val success: Boolean, val message: String?)
@@ -80,6 +90,16 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
         }
     }
 
+    suspend fun logout(navController: NavController) {
+        val r = this.sm.sendData(mapOf(), "${loadURL()}/logout")
+
+        // failed to clear the token, but that doesn't matter for the user
+        if (!r.first) Log.e(TAG, "Failed to logout: ${r.second}")
+        clearAuthCache(true)
+        navController.navigate("login_signup")
+
+    }
+
     suspend fun refreshToken(): Boolean {
         val refreshToken = loadRefreshToken()
         val baseURL = loadURL()
@@ -107,9 +127,12 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
         try {
             if (clearAll) sharedPreferences.edit().clear().commit()
             else sharedPreferences.edit().remove("auth_token").remove("refresh_token").commit()
-        }
-        catch (e: Exception) {
-            if (e.message?.contains("Could not decrypt key. decryption failed") == false) Log.e(TAG, "clearAuthCache failed with error", e)
+        } catch (e: Exception) {
+            if (e.message?.contains("Could not decrypt key. decryption failed") == false) Log.e(
+                TAG,
+                "clearAuthCache failed with error",
+                e
+            )
             else Log.e(TAG, "Failed to decrypt key. Clearing preferences...")
             context.deleteSharedPreferences("AppData")
         }

@@ -26,6 +26,9 @@ okhttp = "4.12.0"
 okhttpVersion = "4.12.0"
 appcompat = "1.7.0"
 composeMaterial3 = "1.0.0-alpha30"
+playServicesAuth = "21.3.0"
+playServicesFitness = "22.0.0"
+playServicesFitnessVersion = "21.2.0"
 roomCompiler = "2.6.1"
 roomKtx = "2.6.1"
 roomRuntime = "2.6.1"
@@ -87,6 +90,9 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
 junit-junit = { group = "junit", name = "junit", version.ref = "junitJunit" }
 androidx-junit-ktx = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "junitKtx" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+play-services-fitness = { module = "com.google.android.gms:play-services-fitness", version.ref = "playServicesFitness" }
+play-services-fitness-v2120 = { module = "com.google.android.gms:play-services-fitness", version.ref = "playServicesFitnessVersion" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 rules = { module = "com.android.support.test:rules", version.ref = "rules" }
 runner = { module = "com.android.support.test:runner", version.ref = "runnerVersion" }

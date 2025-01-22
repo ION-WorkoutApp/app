@@ -1,19 +1,30 @@
 package com.ion606.workoutapp.screens
 
+import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,10 +32,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.password
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.ion606.workoutapp.elements.Tooltip
 import com.ion606.workoutapp.helpers.Alerts
+import com.ion606.workoutapp.helpers.openWebPage
+import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.launch
 
@@ -32,7 +48,12 @@ import kotlinx.coroutines.launch
 class UserScreen {
     companion object {
         @Composable
-        fun CreateScreen(userManager: UserManager, navController: NavHostController) {
+        fun CreateScreen(
+            userManager: UserManager,
+            dataManager: DataManager,
+            navController: NavHostController,
+            context: Context
+        ) {
             val user = userManager.getUserData() ?: return
             val coroutineScope = rememberCoroutineScope()
 
@@ -48,8 +69,16 @@ class UserScreen {
             var newPassword by remember { mutableStateOf("") }
             val triggerDelete = remember { mutableStateOf(false) }
             val alertmsg = remember { mutableStateOf(Pair<String, String?>("", "")) }
+            var logout by remember { mutableStateOf(false) }
 
             if (triggerDelete.value) userManager.DeleteAccount(navController);
+            if (logout) {
+                LaunchedEffect(Unit) {
+                    coroutineScope.launch {
+                        dataManager.logout(navController)
+                    }
+                }
+            }
 
             if (alertmsg.value.first.isNotEmpty()) Alerts.ShowAlert({
                 alertmsg.value = Pair("", "")
@@ -79,12 +108,17 @@ class UserScreen {
                 "Unknown"
             )
             val comfortLevels = listOf("Beginner", "Intermediate", "Advanced", "Unknown")
+            var showTooltip by remember { mutableStateOf(false) }
+            if (showTooltip) {
+                Tooltip(text = "Please contact support to change your email",
+                    onDismiss = { showTooltip = false })
 
-            Scaffold(
-                bottomBar = {
-                    WorkoutBottomBar(navController, 2)
-                }
-            ) { innerPadding ->
+            }
+
+
+            Scaffold(bottomBar = {
+                WorkoutBottomBar(navController, 2)
+            }) { innerPadding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -93,13 +127,35 @@ class UserScreen {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = user.email,
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        IconButton(onClick = {
+                            openWebPage(
+                                context,
+                                "https://workout.ion606.com"
+                            )
+                        }) {
+                            Icon(Icons.Default.Info, contentDescription = "Info")
+                        }
+
+                        Spacer(Modifier.weight(1f))
+
+                        IconButton(onClick = { logout = true }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = "Logout",
+                                tint = Color.Red,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(value = user.email,
                         onValueChange = {},
                         label = { Text("Email") },
                         enabled = false,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showTooltip = !showTooltip })
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
@@ -131,19 +187,21 @@ class UserScreen {
 
                     HorizontalDivider()
 
-                    OutlinedTextField(
-                        value = oldPassword,
+                    OutlinedTextField(value = oldPassword,
                         onValueChange = { oldPassword = it },
                         label = { Text("Old Password") },
                         visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { this.password() }
                     )
-                    OutlinedTextField(
-                        value = newPassword,
+                    OutlinedTextField(value = newPassword,
                         onValueChange = { newPassword = it },
                         label = { Text("New Password") },
                         visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { this.password() }
                     )
 
                     Button(
@@ -180,15 +238,12 @@ class UserScreen {
                                     preferredWorkoutType.value = user.preferredWorkoutType
                                     comfortLevel.value = user.comfortLevel
 
-                                    alertmsg.value =
-                                        Pair(
-                                            "Failed to update user data",
-                                            r.second ?: "Unknown error"
-                                        )
+                                    alertmsg.value = Pair(
+                                        "Failed to update user data", r.second ?: "Unknown error"
+                                    )
                                 }
                             }
-                        },
-                        modifier = Modifier
+                        }, modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
@@ -197,6 +252,17 @@ class UserScreen {
 
                     HorizontalDivider(thickness = 3.dp, color = Color.Red)
                     Text("DANGER ZONE", modifier = Modifier.padding(top = 8.dp))
+
+                    Button(
+                        onClick = {
+                            navController.navigate("permissions")
+                        },
+                        colors = ButtonDefaults.buttonColors(Color.Blue, Color.White),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Permissions")
+                    }
+
                     Button(
                         onClick = {
                             triggerDelete.value = true

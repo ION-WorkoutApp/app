@@ -3,6 +3,7 @@ package com.ion606.workoutapp.managers
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import androidx.navigation.NavController
 
 private const val TAG = "dataManager"
 
@@ -22,6 +23,10 @@ class DataManager(context: Context, private val sm: SyncManager) {
 
     suspend fun login(data: Map<String, String>? = null, baseURL: String? = null): AuthManager.AuthResult {
         return authManager.login(data, baseURL, this);
+    }
+
+    suspend fun logout(navController: NavController) {
+        return authManager.logout(navController)
     }
 
     suspend fun createAccount(data: Map<String, String>, baseURL: String): AccountLoginReturnObject {
@@ -47,5 +52,9 @@ class DataManager(context: Context, private val sm: SyncManager) {
 
     fun pingServer(): Boolean {
         return sm.pingServer()
+    }
+
+    suspend fun refreshToken(): Boolean {
+        return this.authManager.refreshToken()
     }
 }

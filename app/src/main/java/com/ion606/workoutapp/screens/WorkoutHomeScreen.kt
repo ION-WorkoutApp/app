@@ -25,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.R
+import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.UserManager
 
@@ -36,7 +37,8 @@ private const val TAG = "WorkoutHomeScreen"
 fun WorkoutHomeScreen(
     navController: NavController,
     dataManager: DataManager,
-    userManager: UserManager
+    userManager: UserManager,
+    nhelper: NotificationManager
 ) {
     val sheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
@@ -95,7 +97,8 @@ fun WorkoutBottomBar(navController: NavController, isActive: Int = 0) {
     BottomAppBar {
         Row(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(start = 5.dp, end = 5.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

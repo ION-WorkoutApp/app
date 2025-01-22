@@ -3,6 +3,21 @@ package com.ion606.workoutapp.helpers
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ion606.workoutapp.dataObjects.Exercise
 import java.net.NetworkInterface
 import java.net.URL
@@ -53,7 +68,7 @@ class URLHelpers {
     }
 }
 
-fun openWebPage(context: Context, url: String?) {
+fun openWebPage(context: Context, url: String) {
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url));
     context.startActivity(Intent.createChooser(intent, "Choose browser"))
 }
@@ -64,7 +79,10 @@ fun convertSecondsToTimeString(seconds: Int, showHours: Boolean = false): String
     val secs = seconds % 60
 
     // Format the time as HH:mm:ss
-    return if (showHours) "%02d:%02d:%02d".format(hours, minutes, secs) else "%02d:%02d".format(minutes, secs)
+    return if (showHours) "%02d:%02d:%02d".format(hours, minutes, secs) else "%02d:%02d".format(
+        minutes,
+        secs
+    )
 }
 
 
@@ -93,5 +111,32 @@ fun List<Exercise>.sortBySimilarityOrDefault(query: String?): List<Exercise> {
         this.sortedBy { it.title.similarityTo(query) } // Sort by similarity (lower is better)
     } else {
         this.sortedBy({ it.title }) // Default sort (alphabetical)
+    }
+}
+
+@Composable
+fun LoadingScreen(
+    message: String = "Loading...",
+    progressColor: Color = MaterialTheme.colorScheme.primary,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                color = progressColor,
+                strokeWidth = 4.dp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                fontSize = 18.sp,
+                color = progressColor
+            )
+        }
     }
 }

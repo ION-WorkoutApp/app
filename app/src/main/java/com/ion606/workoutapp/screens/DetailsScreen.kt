@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,41 +31,70 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.BuildConfig
+import com.ion606.workoutapp.helpers.LoadingScreen
+import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val TAG = "DetailsScreen"
 
 @Composable
-fun DetailsScreen(navController: NavController, dataManager: DataManager, userManager: UserManager, context: Context) {
+fun DetailsScreen(
+    navController: NavController,
+    dataManager: DataManager,
+    userManager: UserManager,
+    context: Context,
+    nhelper: NotificationManager
+) {
     val isLoggedIn = dataManager.isLoggedIn()
     val mainText = remember { mutableStateOf("") }
     val subText = remember { mutableStateOf("") }
     val serverLink = remember { mutableStateOf<String?>(null) }
     val fetchFailed = remember { mutableStateOf(false) }
+    val showLoadingScreen = remember { mutableStateOf(true) }
+    val coroutineScope = rememberCoroutineScope()
+
+    nhelper.runInitialSetup()
 
     LaunchedEffect(isLoggedIn) {
         try {
-            if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d("MAIN", "LOGGING SENSITIVE DATA (to change this switch BuildConfig.SENSITIVE_LOGGING_ENABLED to false)")
-            
+            if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
+                "MAIN",
+                "LOGGING SENSITIVE DATA (to change this switch BuildConfig.SENSITIVE_LOGGING_ENABLED to false)"
+            )
+
             withContext(Dispatchers.IO) {
                 dataManager.login()
+                //attempt to run refresh token in the background
+                coroutineScope.launch {
+                    val result = dataManager.refreshToken()
+                    Log.d(TAG, "Token refresh result: $result")
+                }
+
                 Log.d(TAG, "Logged in successfully on ${Thread.currentThread().name}")
 
                 val serverPingSuccess = dataManager.pingServer()
+
                 if (!serverPingSuccess) {
                     withContext(Dispatchers.Main) {
                         mainText.value = "Failed to connect to server"
-                        subText.value = "Please check your internet connection.\nIf you're the server admin, please check the server logs."
+                        subText.value =
+                            "Please check your internet connection.\nIf you're the server admin, please check the server logs."
                         fetchFailed.value = true
                         serverLink.value = dataManager.loadURL()
+                        showLoadingScreen.value = false
                     }
                     Log.d(TAG, "Failed to ping server")
                     return@withContext
                 } else {
-                    Log.d(TAG, "DEBUG: server pinged successfully on ${Thread.currentThread().name}")
+                    showLoadingScreen.value = false
+                    Log.d(
+                        TAG,
+                        "DEBUG: server pinged successfully on ${Thread.currentThread().name}"
+                    )
                 }
 
                 when (val result = userManager.fetchUserData()) {
@@ -87,6 +117,7 @@ fun DetailsScreen(navController: NavController, dataManager: DataManager, userMa
                             Log.d(TAG, "User data is null")
                         }
                     }
+
                     is UserManager.FetchUserDataResult.Error -> {
                         withContext(Dispatchers.Main) {
                             mainText.value = "Failed to fetch user data"
@@ -141,7 +172,12 @@ fun DetailsScreen(navController: NavController, dataManager: DataManager, userMa
                         tag = "URL",
                         annotation = url
                     )
-                    withStyle(style = SpanStyle(color = Color(red = 173, green = 216, blue = 230), textDecoration = TextDecoration.Underline)) {
+                    withStyle(
+                        style = SpanStyle(
+                            color = Color(red = 173, green = 216, blue = 230),
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) {
                         append(url)
                     }
                     pop()
@@ -150,7 +186,11 @@ fun DetailsScreen(navController: NavController, dataManager: DataManager, userMa
                 ClickableText(
                     text = annotatedString,
                     onClick = { offset ->
-                        annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                        annotatedString.getStringAnnotations(
+                            tag = "URL",
+                            start = offset,
+                            end = offset
+                        )
                             .firstOrNull()?.let { annotation ->
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
                                 context.startActivity(intent)
@@ -173,6 +213,11 @@ fun DetailsScreen(navController: NavController, dataManager: DataManager, userMa
                 }) {
                     Text("Log Out and Try Again")
                 }
+            } else if (showLoadingScreen.value) {
+                LoadingScreen(
+                    message = "Please wait...",
+                    progressColor = Color(0xFFBB86FC)
+                )
             }
         }
     }

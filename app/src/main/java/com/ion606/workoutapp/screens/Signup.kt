@@ -29,6 +29,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.password
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -185,7 +187,7 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                                 Icon(imageVector = image, contentDescription = description)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().semantics { this.password() }
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { step.value = 2 }, modifier = Modifier.fillMaxWidth()) {

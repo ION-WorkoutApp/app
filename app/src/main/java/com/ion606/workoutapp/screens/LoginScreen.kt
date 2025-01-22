@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.password
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -62,7 +64,8 @@ fun LoginScreen(navController: NavController, dataManager: DataManager, userMana
                 onValueChange = { password.value = it },
                 label = { Text("Password") },
                 visualTransformation = PasswordVisualTransformation(),
-                enabled = !isDisabled.value
+                enabled = !isDisabled.value,
+                modifier = Modifier.semantics { this.password() }
             )
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
@@ -86,7 +89,7 @@ fun LoginScreen(navController: NavController, dataManager: DataManager, userMana
                     val (success, msg) = dataManager.login(loginObj, serverUrl.value)
                     if (success) {
                         loginMessage.value = "Login Successful!"
-                        navController.navigate("home")
+                        navController.navigate("permissionsredirect")
                     } else {
                         loginMessage.value = "Login Failed: ${msg.orEmpty()}"
                         isDisabled.value = false

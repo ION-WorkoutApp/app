@@ -68,6 +68,7 @@ import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
 import com.ion606.workoutapp.elements.InputField
 import com.ion606.workoutapp.elements.InputFieldCompact
 import com.ion606.workoutapp.helpers.Alerts
+import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.logic.StartTimer
 import kotlinx.coroutines.delay
@@ -107,7 +108,8 @@ class DisplayActiveExercise {
         fun DisplayActiveExerciseScreen(
             activeExercise: MutableState<ActiveExercise?>,
             triggerExerciseSave: (ActiveExercise) -> Unit,
-            context: Context
+            context: Context,
+            nhelper: NotificationManager
 //            triggerExerciseLoad: () -> ActiveExercise?
         ) {
             val exercise = activeExercise.value ?: return
@@ -148,6 +150,14 @@ class DisplayActiveExercise {
                     onFinishCB = {
                         isTimerVisible.value = it
                         if (it) {
+                            nhelper.sendNotificationIfUnfocused(
+                                title = "Set Timer",
+                                message = "Timer completed for ${exercise.exercise.title}",
+                                intents = listOf(
+                                    "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                                    "exerciseId" to exercise.exercise.exerciseId
+                                )
+                            )
                             timerSetr.value!!.isDone = true
                             timerSetr.value = null
                         }
@@ -159,6 +169,15 @@ class DisplayActiveExercise {
                         if (it) {
                             restTimer.intValue = 0
                             Log.d(TAG, "Rest timer completed")
+
+                            nhelper.sendNotificationIfUnfocused(
+                                title = "Rest Timer",
+                                message = "Rest timer completed for ${exercise.exercise.title}",
+                                intents = listOf(
+                                    "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                                    "exerciseId" to exercise.exercise.exerciseId
+                                )
+                            )
                         }
                     }, restTimer.intValue, "Rest Timer"
                 )
@@ -340,16 +359,6 @@ class DisplayActiveExercise {
                                             }
                                             editingTimer = false
                                     }
-//                                    TimeInput(timeStr = convertSecondsToTimeString(restTimeStr),
-//                                        onDismiss = { editingTimer = false },
-//                                        onTimeSelected = { newTime ->
-//                                            restTimeStr = (60 * newTime.first) + newTime.second
-//                                            itemList.value = itemList.value.toMutableList().apply {
-//                                                this[i] =
-//                                                    setItem.copy(restTime = (60 * newTime.first) + newTime.second)
-//                                            }
-//                                            editingTimer = false
-//                                        })
                                 }
                             }
 

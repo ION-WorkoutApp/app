@@ -45,6 +45,7 @@ import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
 import com.ion606.workoutapp.dataObjects.Workout
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.Alerts.Companion.CreateAlertDialog
+import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
@@ -78,7 +79,8 @@ class ExerciseScreen {
             syncManager: SyncManager,
             dao: ActiveExerciseDao,
             navController: NavHostController,
-            context: Context
+            context: Context,
+            nhelper: NotificationManager
         ) {
             val exercises = remember { mutableStateOf(listOf<ActiveExercise>()) }
             val dispSelPop = remember { mutableStateOf(false) }
@@ -185,7 +187,9 @@ class ExerciseScreen {
 
                         val totalTime = workoutTime.value.time
                         val toSend = mapOf(
-                            "exercises" to dao.getAll(), "totalTime" to totalTime, "workoutTime" to workoutTime.value.time
+                            "exercises" to dao.getAll(),
+                            "totalTime" to totalTime,
+                            "workoutTime" to workoutTime.value.time
                         )
                         Log.d("SAVING", toSend.toString())
                         val r = syncManager.sendData(toSend, path = "workout")
@@ -383,6 +387,7 @@ class ExerciseScreen {
             if (openExercise.value != null) {
                 DisplayActiveExercise.DisplayActiveExerciseScreen(activeExercise = openExercise,
                     context = context,
+                    nhelper = nhelper,
                     triggerExerciseSave = { exercise: ActiveExercise ->
                         Log.d(
                             TAG, "Saving exercise (in ExerciseScreen): ${exercise.exercise.title}"
