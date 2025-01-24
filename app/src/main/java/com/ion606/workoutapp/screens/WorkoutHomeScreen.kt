@@ -15,9 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,28 +23,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.R
-import com.ion606.workoutapp.helpers.NotificationManager
-import com.ion606.workoutapp.managers.DataManager
-import com.ion606.workoutapp.managers.UserManager
 
 
 private const val TAG = "WorkoutHomeScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkoutHomeScreen(
-    navController: NavController,
-    dataManager: DataManager,
-    userManager: UserManager,
-    nhelper: NotificationManager
-) {
-    val sheetState = rememberModalBottomSheetState()
-    val coroutineScope = rememberCoroutineScope()
-
-    Scaffold(
-        topBar = { WorkoutTopBar() },
-        bottomBar = { WorkoutBottomBar(navController, 0) }
-    ) { innerPadding ->
+fun WorkoutHomeScreen(navController: NavController) {
+    Scaffold(topBar = { WorkoutTopBar() },
+        bottomBar = { WorkoutBottomBar(navController, 0) }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -81,14 +66,11 @@ fun WorkoutHomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutTopBar() {
-    TopAppBar(
-        title = {
-            Text(
-                text = "Workout App",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        }
-    )
+    TopAppBar(title = {
+        Text(
+            text = "Workout App", style = MaterialTheme.typography.headlineSmall
+        )
+    })
 }
 
 
@@ -125,7 +107,9 @@ fun WorkoutBottomBar(navController: NavController, isActive: Int = 0) {
 }
 
 @Composable
-fun IconButtonWithLabel(iconResId: Int, label: String, onClick: () -> Unit, isActive: Boolean = false) {
+fun IconButtonWithLabel(
+    iconResId: Int, label: String, onClick: () -> Unit, isActive: Boolean = false
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

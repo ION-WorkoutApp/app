@@ -49,6 +49,7 @@ class Alerts {
         ) {
             androidx.compose.material.AlertDialog(
                 modifier = Modifier.background(Color.DarkGray),
+                backgroundColor = Color.DarkGray,
                 onDismissRequest = { onClick(true) },
                 title = { Text(text = title) },
                 text = { Text(text = text) },

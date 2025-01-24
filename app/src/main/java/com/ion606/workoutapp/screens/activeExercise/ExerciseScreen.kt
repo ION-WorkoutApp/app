@@ -161,7 +161,7 @@ class ExerciseScreen {
                                     "workout" to mapOf(
                                         "exercises" to savedWorkout, "totalTime" to 0
                                     ), "workoutname" to workoutName.toString()
-                                ), path = "savedworkouts"
+                                ), path = "workouts/savedworkouts"
                             )
 
                             if (r.first) {
@@ -192,7 +192,7 @@ class ExerciseScreen {
                             "workoutTime" to workoutTime.value.time
                         )
                         Log.d("SAVING", toSend.toString())
-                        val r = syncManager.sendData(toSend, path = "workout")
+                        val r = syncManager.sendData(toSend, path = "workouts/workout")
                         Log.d("SAVE RESULT", r.toString())
 
                         dao.getAll().forEach { exercise ->
@@ -355,7 +355,7 @@ class ExerciseScreen {
                             LaunchedEffect("endworkout") {
                                 coroutneScope.launch {
                                     val r = syncManager.sendData(
-                                        mapOf(), path = "savedworkouts", method = "GET"
+                                        mapOf(), path = "workouts/savedworkouts", method = "GET"
                                     );
 
                                     if (r.first) {

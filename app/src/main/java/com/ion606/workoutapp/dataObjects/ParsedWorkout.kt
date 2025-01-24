@@ -3,7 +3,7 @@ package com.ion606.workoutapp.dataObjects
 import com.google.gson.annotations.SerializedName
 
 data class ParsedWorkoutResponse(
-    val success: Boolean, val workouts: List<ParsedActiveExercise>
+    val success: Boolean, var workouts: List<ParsedActiveExercise>
 )
 
 data class ParsedActiveExercise(

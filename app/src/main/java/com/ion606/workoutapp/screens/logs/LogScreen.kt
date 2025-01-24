@@ -1,8 +1,9 @@
-package com.ion606.workoutapp.screens
+package com.ion606.workoutapp.screens.logs
 
-import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -29,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.google.gson.Gson
 import com.ion606.workoutapp.dataObjects.ParsedActiveExercise
 import com.ion606.workoutapp.dataObjects.ParsedExercise
 import com.ion606.workoutapp.dataObjects.ParsedWorkoutResponse
@@ -51,62 +53,178 @@ import com.ion606.workoutapp.helpers.Alerts.Companion.CreateAlertDialog
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
+import com.ion606.workoutapp.screens.WorkoutBottomBar
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
-
-private const val TAG = "LogScreen"
-
-
-fun parseWorkoutResponse(json: String): ParsedWorkoutResponse? {
-    return try {
-        val gson = Gson()
-        gson.fromJson(json, ParsedWorkoutResponse::class.java)
-    } catch (e: Exception) {
-        Log.e("LogScreen", "Parsing error: ${e.message}")
-        e.printStackTrace()
-        null
-    }
-}
-
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DarkThemeWorkoutResponse(
-    syncManager: SyncManager,
-    userManager: UserManager,
-    response: ParsedWorkoutResponse,
-    navController: NavHostController,
-    context: Context
+    sm: SyncManager, userManager: UserManager, navController: NavHostController, context: Context
 ) {
-    Scaffold(bottomBar = {
-        WorkoutBottomBar(navController, 1)
+    val listState = rememberLazyListState()
+
+    // initial response state
+    var response by remember { mutableStateOf<ParsedWorkoutResponse?>(null) }
+    var error by remember { mutableStateOf("") }
+
+    val tt = ZonedDateTime.now();
+    var workoutDate by remember { mutableStateOf(getLocalDayRangeInUTC(tt.year, tt.monthValue, tt.dayOfMonth)) }
+
+    val pageManager by remember {
+        mutableStateOf(object {
+            var currentPage = 0
+            var previousPage = 0
+            var nextPage = 1
+            var hasNextPage = true
+        })
+    }
+
+    // flag to prevent multiple requests at the same time
+    var isLoading by remember { mutableStateOf(false) }
+    var isLoadingDay by remember { mutableStateOf(false) }
+    var dates by remember { mutableStateOf<List<ZonedDateTime>>(emptyList()) }
+
+    // fetch initial workouts
+    LaunchedEffect(workoutDate) {
+        if (!isLoading) {
+            isLoading = true
+            isLoadingDay = true // needs to be different to avoid an infinite loop
+
+            val result = sm.sendData(
+                emptyMap(),
+                path = "workouts/workouts?pagenum=${pageManager.currentPage}&date=$workoutDate",
+                method = "GET"
+            )
+            if (result.first) {
+                val parsedResponse = parseWorkoutResponse(result.second.toString())
+                if (parsedResponse != null) {
+                    response = parsedResponse
+                } else {
+                    error = "Failed to parse initial workout response"
+                }
+            } else error = result.second.toString()
+
+            if (response != null && dates.isEmpty()) {
+                val r2 = sm.sendData(
+                    emptyMap(), path = "workouts/workoutdates", method = "GET"
+                )
+
+                if (r2.first) dates = parseTimestamps(r2.second.toString())
+                else error = r2.second.toString()
+            }
+
+            isLoading = false
+            isLoadingDay = false
+        }
+    }
+
+    Scaffold(bottomBar = { WorkoutBottomBar(navController, 1) }, topBar = {
+        LogTopBar(dates) { workoutDate = it }
     }) { innerPadding ->
-        if (response.success && response.workouts.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF121212))
-                    .padding(innerPadding)
-            ) {
-                LazyColumn {
-                    items(response.workouts) { workout ->
-                        WorkoutCard(workout, userManager, syncManager, navController, context)
-                    }
+        when {
+            (response == null || isLoadingDay) -> {
+                // loading state
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .background(Color(0xFF121212)), contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "Loading workouts...", color = Color.Gray, fontSize = 18.sp)
                 }
             }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(Color(0xFF121212)), contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (response.success) "No workouts available" else "Failed to load workouts",
-                    color = Color.Gray,
-                    fontSize = 18.sp
-                )
+
+            response?.workouts.isNullOrEmpty() -> {
+                // no workouts available
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .background(Color(0xFF121212)), contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "No workouts available", color = Color.Gray, fontSize = 18.sp)
+                }
+            }
+
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF121212))
+                        .padding(innerPadding)
+                ) {
+                    LazyColumn(
+                        state = listState, modifier = Modifier.fillMaxSize()
+                    ) {
+                        if (!response?.workouts.isNullOrEmpty()) {
+                            items(response!!.workouts) { workout ->
+                                WorkoutCard(workout, userManager, sm, navController, context)
+                            }
+                        }
+                        else Log.d("WORKOUTS", "No workouts available for $workoutDate")
+                    }
+
+                    val reachedBottom by remember { derivedStateOf { listState.reachedBottom() } }
+                    val reachedTop by remember { derivedStateOf { listState.reachedTop() } }
+
+                    // load more workouts when reaching the bottom
+                    LaunchedEffect(reachedBottom) {
+                        if (reachedBottom && pageManager.hasNextPage && !isLoading) {
+                            isLoading = true
+                            val result = sm.sendData(
+                                emptyMap(),
+                                path = "workouts/workouts?pagenum=${pageManager.nextPage}",
+                                method = "GET"
+                            )
+                            if (result.first) {
+                                val parsedResponse = parseWorkoutResponse(result.second.toString())
+                                pageManager.hasNextPage =
+                                    (parsedResponse?.workouts?.isNotEmpty() == true)
+
+                                if (parsedResponse != null && parsedResponse.workouts.isNotEmpty()) {
+                                    pageManager.previousPage = pageManager.currentPage
+                                    pageManager.currentPage = pageManager.nextPage
+                                    pageManager.nextPage++
+                                    response = response!!.copy(
+                                        workouts = response!!.workouts + parsedResponse.workouts
+                                    )
+                                } else {
+                                    error = "Failed to parse response"
+                                }
+                            } else {
+                                error = result.second.toString()
+                            }
+                            isLoading = false
+                        }
+                    }
+
+                    // handle top refresh (if needed)
+                    LaunchedEffect(reachedTop) {
+                        if (reachedTop && pageManager.currentPage > 0 && !isLoading) {
+                            isLoading = true
+                            val result = sm.sendData(
+                                emptyMap(),
+                                path = "workouts/workouts?pagenum=${pageManager.previousPage}",
+                                method = "GET"
+                            )
+                            if (result.first) {
+                                val parsedResponse = parseWorkoutResponse(result.second.toString())
+                                if (parsedResponse != null) {
+                                    pageManager.currentPage = pageManager.previousPage
+                                    response = response!!.copy(
+                                        workouts = parsedResponse.workouts + response!!.workouts
+                                    )
+                                } else {
+                                    error = "Failed to parse response"
+                                }
+                            } else {
+                                error = result.second.toString()
+                            }
+                            isLoading = false
+                        }
+                    }
+                }
             }
         }
     }
@@ -158,7 +276,7 @@ fun WorkoutCard(
                                 "workout" to mapOf(
                                     "exercises" to savedWorkout, "totalTime" to 0
                                 ), "workoutname" to workoutName.toString()
-                            ), path = "savedworkouts"
+                            ), path = "workouts/savedworkouts"
                         )
 
                         if (r.first) {
@@ -175,8 +293,7 @@ fun WorkoutCard(
         if (visible) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Column(
-                    modifier = Modifier
-                        .padding(16.dp)
+                    modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Workout on ${formatTimestamp(workout.createdAt)} at ${
@@ -217,15 +334,13 @@ fun WorkoutCard(
 
                 if (editTime) {
                     CreateAlertDialog(
-                        title = "New Workout Time",
-                        context = context,
-                        isTimeInput = true
+                        title = "New Workout Time", context = context, isTimeInput = true
                     ) {
                         Log.d("EditTime", "New Workout Time: $it")
                         scope.launch {
                             val r = syncManager.sendData(
                                 mapOf("workoutId" to workout.id, "newTime" to it.toString()),
-                                path = "workout",
+                                path = "workouts/workout",
                                 method = "PUT"
                             )
 
@@ -272,15 +387,6 @@ fun WorkoutCard(
     }
 }
 
-
-@SuppressLint("NewApi")
-fun formatTimestamp(timestamp: String, returnTime: Boolean = false): String {
-    val zonedDateTime = ZonedDateTime.parse(timestamp)
-    val formatter = DateTimeFormatter.ofPattern(if (returnTime) "hh:mm:ss" else "dd/MM/yy")
-    return zonedDateTime.format(formatter)
-}
-
-
 @Composable
 fun ExerciseDetails(exercise: ParsedExercise) {
     Column(
@@ -319,14 +425,13 @@ fun ExerciseDetails(exercise: ParsedExercise) {
         }
 
         // Slide in description when visible
-        AnimatedVisibility(
-            visible = descriptionVisible,
+        AnimatedVisibility(visible = descriptionVisible,
             enter = slideInVertically(initialOffsetY = { 0 }),
             exit = slideOutVertically(targetOffsetY = { 0 })
         ) {
             // Display description text
             Text(
-                text = "${exercise.description}",
+                text = exercise.description,
                 fontSize = 12.sp,
                 color = Color(0xFFB0B0B0),
                 modifier = Modifier.padding(top = 4.dp)
@@ -393,6 +498,7 @@ fun ExerciseDetails(exercise: ParsedExercise) {
 
 class LogScreen {
     companion object {
+        @RequiresApi(Build.VERSION_CODES.O)
         @Composable
         fun CreateScreen(
             userManager: UserManager,
@@ -400,47 +506,9 @@ class LogScreen {
             navController: NavHostController,
             context: Context
         ) {
-            val showLog = remember { mutableStateOf<ParsedWorkoutResponse?>(null) }
-
-            if (showLog.value != null) {
-                DarkThemeWorkoutResponse(
-                    syncManager, userManager, showLog.value!!, navController, context
-                )
-            }
-
-            val err = remember { mutableStateOf(false) }
-            if (err.value) {
-                Alerts.ShowAlert({
-                    userManager.clearPreferences();
-                    navController.navigate("login");
-                    err.value = false;
-                }, "Failed to load workouts", "Please log out and try again!")
-            }
-
-            LaunchedEffect("userlog") {
-                val ulog = syncManager.sendData(emptyMap(), path = "workouts", method = "GET")
-                try {
-                    Log.d("LogScreen", "Raw response: ${ulog.second}")
-
-                    if (ulog.second is String) {
-                        val json = ulog.second.toString()
-                        val parsedResponse = parseWorkoutResponse(json)
-
-                        if (parsedResponse != null && parsedResponse.success) {
-                            showLog.value = parsedResponse
-                            Log.d("parsedResponse", "Parsed response: $parsedResponse")
-                        } else {
-                            err.value = true
-                            Log.e("LogScreen", "Failed to parse workout response")
-                        }
-                    } else {
-                        Log.e("LogScreen", "Unexpected response type: ${ulog.second!!::class.java}")
-                    }
-                } catch (e: Exception) {
-                    Log.e("LogScreen", "Exception during processing: ${e.message}")
-                    e.printStackTrace()
-                }
-            }
+            DarkThemeWorkoutResponse(
+                syncManager, userManager, navController, context
+            )
         }
     }
 }

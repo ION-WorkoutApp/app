@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ion606.workoutapp.managers.SyncManager
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -144,3 +147,18 @@ fun TimeInput(
         }
     }
 }
+
+@Composable
+fun CheckIfInDebugMode(sm: SyncManager, isInDebugMode: (Boolean) -> Unit) {
+    // launchedEffect is triggered once and keeps the coroutine running as long as this composable is in the composition
+    LaunchedEffect(Unit) {
+        while (true) {
+            val r = sm.sendData(emptyMap(), path = "isindebugmode", method = "HEAD");
+            isInDebugMode(r.first)
+
+            // wait for 5 minutes
+            delay(1 * 60 * 1000L)
+        }
+    }
+}
+

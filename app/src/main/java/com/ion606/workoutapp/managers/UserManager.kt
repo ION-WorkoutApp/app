@@ -76,7 +76,7 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
 
         val response = sm.sendData(
             emptyMap(),
-            path = "exercises?${requestData.toQueryParams()}",
+            path = "exercises/exercises?${requestData.toQueryParams()}",
             method = "GET"
         )
 
@@ -91,7 +91,7 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
 
     suspend fun fetchUserData(): FetchUserDataResult {
         val baseURL = sm.getBaseURL() ?: return FetchUserDataResult.Error("Base URL is null")
-        val udata = sm.sendData(mapOf(), baseURL, "userdata", "GET", dm.authManager)
+        val udata = sm.sendData(mapOf(), baseURL, "users/userdata", "GET", dm.authManager)
 
         Log.d(TAG, "DEBUG: udata: ${UserDataObj.fromString(udata.second as String)}")
 
@@ -105,7 +105,7 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
     suspend fun fetchCategories(): CategoryData? {
         val response = sm.sendData(
             mapOf("field" to "bodyPart"),
-            path = "categories?field=bodyPart",
+            path = "exercises/categories?field=bodyPart",
             method = "GET"
         )
 
@@ -164,10 +164,10 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
         if (newPassword != null && !passChecked.first) return passChecked
         else if (newPassword != null) {
             userData = user.toUserDataObj(newPassword)
-            this.sm.sendData(userData!!.toMap(), path = "updatedetails", method = "PUT")
+            this.sm.sendData(userData!!.toMap(), path = "users/updatedetails", method = "PUT")
         } else {
             userData = user.toUserDataObj(userData!!.password)
-            this.sm.sendData(userData!!.toMap(), path = "updatedetails", method = "PUT")
+            this.sm.sendData(userData!!.toMap(), path = "users/updatedetails", method = "PUT")
         }
         return Pair(true, null);
     }
@@ -204,7 +204,7 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
 
             LaunchedEffect("deleteaccount", sm) {
                 scope.launch {
-                    val r = sm.sendData(emptyMap(), path = "deleteaccount", method = "DELETE")
+                    val r = sm.sendData(emptyMap(), path = "users/deleteaccount", method = "DELETE")
                     if (r.first) status.intValue = 1
                     else {
                         status.intValue = 2
@@ -220,6 +220,6 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
     }
 
     suspend fun deleteWorkout(workout: ParsedActiveExercise): Pair<Boolean, Any?> {
-        return this.sm.sendData(mapOf("id" to workout.id), path = "workout", method = "DELETE")
+        return this.sm.sendData(mapOf("id" to workout.id), path = "workouts/workout", method = "DELETE")
     }
 }

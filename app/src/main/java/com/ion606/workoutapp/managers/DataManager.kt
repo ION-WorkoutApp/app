@@ -31,7 +31,7 @@ class DataManager(context: Context, private val sm: SyncManager) {
 
     suspend fun createAccount(data: Map<String, String>, baseURL: String): AccountLoginReturnObject {
         try {
-            val (success, message) = sm.sendData(data, "$baseURL/initaccount")
+            val (success, message) = sm.sendData(data, "$baseURL/auth/initaccount")
             if (success) {
                 val result = authManager.login(data, baseURL, this)
                 if (!result.success) return AccountLoginReturnObject(false, result.message)

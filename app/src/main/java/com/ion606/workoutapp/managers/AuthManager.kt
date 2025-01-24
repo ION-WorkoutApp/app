@@ -75,7 +75,7 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
 
         sm.changeBaseURL(credentials["serverurl"].toString())
 
-        val (success, retval) = sm.sendData(credentials, "$baseURL/checkcredentials")
+        val (success, retval) = sm.sendData(credentials, "$baseURL/auth/checkcredentials")
 
         if (success) {
             token = JSONObject(retval as String).get("token").toString()
@@ -91,7 +91,7 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
     }
 
     suspend fun logout(navController: NavController) {
-        val r = this.sm.sendData(mapOf(), "${loadURL()}/logout")
+        val r = this.sm.sendData(mapOf(), "${loadURL()}/users/logout")
 
         // failed to clear the token, but that doesn't matter for the user
         if (!r.first) Log.e(TAG, "Failed to logout: ${r.second}")
@@ -110,7 +110,7 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
         }
 
         val data = mapOf("refreshToken" to refreshToken)
-        val (success, retval) = sm.sendData(data, "$baseURL/refresh-token")
+        val (success, retval) = sm.sendData(data, "$baseURL/auth/refresh-token")
         if (success) {
             val newToken = JSONObject(retval as String).get("token").toString()
             saveToken(newToken)
