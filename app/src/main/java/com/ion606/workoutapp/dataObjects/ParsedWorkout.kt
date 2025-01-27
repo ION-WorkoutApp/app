@@ -1,6 +1,7 @@
 package com.ion606.workoutapp.dataObjects
 
 import com.google.gson.annotations.SerializedName
+import com.ion606.workoutapp.screens.activeExercise.SuperSet
 
 data class ParsedWorkoutResponse(
     val success: Boolean, var workouts: List<ParsedActiveExercise>
@@ -50,6 +51,7 @@ data class SavedWorkoutResponse(
 data class Workout(
     @SerializedName("_id") val id: String,
     @SerializedName("exercises") val exercises: List<Exercise>,
+    @SerializedName("supersets") val supersets: List<SuperSet>,
     @SerializedName("totalTime") val totalTime: Int,
     @SerializedName("isSaved") val isSaved: Boolean,
     @SerializedName("workoutName") val workoutName: String,

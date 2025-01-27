@@ -4,6 +4,7 @@ import android.os.CountDownTimer
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,6 +46,7 @@ import androidx.compose.ui.zIndex
 import com.ion606.workoutapp.R
 import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
+import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 
 
 // TODO: add "select current set" logic
@@ -64,6 +66,20 @@ fun exerciseLogic(
 
     // Assign the new list back to the state
     itemList.value = updatedList
+}
+
+@Composable
+fun DisplayTimer(
+    timeLeft: Int,
+    onPause: () -> Unit
+) {
+    // show a text for the countdown
+    Text(
+        text = convertSecondsToTimeString(timeLeft),
+        color = Color.White,
+        fontSize = 28.sp,
+        modifier = Modifier.clickable { onPause() }
+    )
 }
 
 

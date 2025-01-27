@@ -33,6 +33,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.ion606.workoutapp.R
 import com.ion606.workoutapp.dataObjects.ActiveExercise
-import com.ion606.workoutapp.dataObjects.ActiveExerciseDao
 import com.ion606.workoutapp.dataObjects.Exercise
 import com.ion606.workoutapp.dataObjects.ExerciseFilter
 import com.ion606.workoutapp.dataObjects.ExercisePickerState
@@ -63,7 +63,7 @@ private const val TAG = "ExercisePopup"
 
 
 // TODO: come up with a better way to give rep/set recommendations
-fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<ActiveExercise> {
+fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<SuperSet> {
     val setsCount = 5
     val repList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
         ExerciseSetDataObj(i)
@@ -76,14 +76,18 @@ fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<ActiveExe
     }
 
     return checkedExercises.map {
-        ActiveExercise(
-            exercise = it,
-            sets = setsCount,
-            setsDone = 0,
-            reps = repList.toMutableList(),
-            times = timesList.toMutableList(),
-            weight = weightsList.toMutableList()
-        )
+        SuperSet(exercises = SnapshotStateList<ActiveExercise>().apply {
+            add(
+                ActiveExercise(
+                    exercise = it,
+                    sets = setsCount,
+                    setsDone = 0,
+                    reps = repList.toMutableList(),
+                    times = timesList.toMutableList(),
+                    weight = weightsList.toMutableList()
+                )
+            )
+        })
     }
 }
 
@@ -94,11 +98,11 @@ class ExercisePickerPopup {
         @Composable
         fun CreateSelectionPopup(
             userManager: UserManager,
-            exerciseActivities: MutableState<List<ActiveExercise>>,
+            exerciseActivities: SnapshotStateList<SuperSet>,
             showSelector: MutableState<Boolean>,
             currentCat: MutableState<String>,
             state: ExercisePickerState = rememberExercisePickerState(), // use the state class
-            dao: ActiveExerciseDao
+            dao: SuperSetDao
         ) {
             val coroutineScope = rememberCoroutineScope()
 
@@ -122,11 +126,8 @@ class ExercisePickerPopup {
 
                         val response = userManager.fetchExercises(
                             ExerciseFilter(
-                                muscleGroup = currentCat.value,
-                                term = state.searchQuery.value
-                            ),
-                            page = state.currentPage.value,
-                            pageSize = 30
+                                muscleGroup = currentCat.value, term = state.searchQuery.value
+                            ), page = state.currentPage.value, pageSize = 30
                         )
 
                         if (response.exercises.isEmpty()) {
@@ -152,8 +153,7 @@ class ExercisePickerPopup {
             // Show the popup dynamically if `showPopup` is true and an exercise is selected
             if (state.showPopup.value && state.selectedExercise.value != null) {
                 ExerciseCardPopup(
-                    exercise = state.selectedExercise.value!!,
-                    showPopup = state.showPopup
+                    exercise = state.selectedExercise.value!!, showPopup = state.showPopup
                 )
             }
 
@@ -166,25 +166,23 @@ class ExercisePickerPopup {
                             .zIndex(Float.MAX_VALUE)
                             .padding(bottom = 20.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                //  Add checked exercises to the activity list
-                                val toAdd = exercisesToActiveExercises(state.checkedExercises.toList());
+                        Button(onClick = {
+                            //  Add checked exercises to the activity list
+                            val toAdd = exercisesToActiveExercises(state.checkedExercises.toList());
 
-                                coroutineScope.launch {
-                                    dao.insertAll(toAdd)
-                                }
-                                exerciseActivities.value += toAdd
+                            coroutineScope.launch {
+                                dao.insertAll(toAdd)
+                            }
+                            exerciseActivities += toAdd
 
-                                // Explicitly close the popup here
-                                showSelector.value = false
-                            },
+                            // Explicitly close the popup here
+                            showSelector.value = false
+                        },
                             modifier = Modifier
                                 .width(100.dp)
                                 .height(50.dp)
                                 .align(Alignment.BottomCenter),
-                            content = { Text("Done") }
-                        )
+                            content = { Text("Done") })
                     }
                 }
 
@@ -198,8 +196,7 @@ class ExercisePickerPopup {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Search Bar for Exercises
-                    TextField(
-                        value = state.searchQuery.value,
+                    TextField(value = state.searchQuery.value,
                         maxLines = 1,
                         onValueChange = {
                             state.searchQuery.value = it
@@ -250,8 +247,7 @@ class ExercisePickerPopup {
                             ) {
                                 items(state.exercises.filter { exercise ->
                                     state.searchQuery.value.isEmpty() || exercise.title.contains(
-                                        state.searchQuery.value,
-                                        ignoreCase = true
+                                        state.searchQuery.value, ignoreCase = true
                                     )
                                 }) { exercise ->
                                     ExerciseItem(exercise, state.checkedExercises) {
@@ -277,8 +273,7 @@ class ExercisePickerPopup {
                             Button(
                                 onClick = {
                                     currentCat.value = ""
-                                },
-                                modifier = Modifier.fillMaxWidth()
+                                }, modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("Back to Categories")
                             }
@@ -290,9 +285,7 @@ class ExercisePickerPopup {
 
         @Composable
         fun AddCategories(
-            categories: List<String>,
-            currentCat: MutableState<String>,
-            state: ExercisePickerState
+            categories: List<String>, currentCat: MutableState<String>, state: ExercisePickerState
         ) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -303,13 +296,11 @@ class ExercisePickerPopup {
                 verticalArrangement = Arrangement.spacedBy(16.dp)   // spacing between rows
             ) {
                 items(categories) { label ->
-                    CategoryCard(
-                        category = label,
-                        onClick = {
-                            state.totalPages.value = 0
-                            state.currentPage.value = 0
-                            currentCat.value = label
-                        } // Set selected category
+                    CategoryCard(category = label, onClick = {
+                        state.totalPages.value = 0
+                        state.currentPage.value = 0
+                        currentCat.value = label
+                    } // Set selected category
                     )
                 }
             }
@@ -330,8 +321,7 @@ class ExercisePickerPopup {
                     .fillMaxWidth(fraction = 0.3f),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    contentColor = Color.White,
-                    containerColor = Color.DarkGray
+                    contentColor = Color.White, containerColor = Color.DarkGray
                 )
             ) {
                 Column(
@@ -357,9 +347,7 @@ class ExercisePickerPopup {
 
         @Composable
         fun ExerciseItem(
-            exercise: Exercise,
-            checkedExercises: MutableList<Exercise>,
-            onClick: (Exercise) -> Unit
+            exercise: Exercise, checkedExercises: MutableList<Exercise>, onClick: (Exercise) -> Unit
         ) {
             val checked = remember { mutableStateOf(checkedExercises.contains(exercise)) }
 
@@ -373,9 +361,7 @@ class ExercisePickerPopup {
                         checked.value = it
                         if (it) checkedExercises.add(exercise)
                         else checkedExercises.remove(exercise)
-                    },
-                    checked = checked.value,
-                    colors = CheckboxDefaults.colors(
+                    }, checked = checked.value, colors = CheckboxDefaults.colors(
                         checkedColor = Color(0xFF228B22),
                         uncheckedColor = MaterialTheme.colorScheme.onSurface,
                         checkmarkColor = MaterialTheme.colorScheme.onPrimary
@@ -388,13 +374,11 @@ class ExercisePickerPopup {
                     modifier = Modifier.weight(1f), // make button take up remaining space
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        contentColor = Color.White,
-                        containerColor = Color.DarkGray
+                        contentColor = Color.White, containerColor = Color.DarkGray
                     )
                 ) {
                     Text(
-                        text = exercise.title,
-                        style = MaterialTheme.typography.bodyLarge
+                        text = exercise.title, style = MaterialTheme.typography.bodyLarge
                     )
                 }
             }

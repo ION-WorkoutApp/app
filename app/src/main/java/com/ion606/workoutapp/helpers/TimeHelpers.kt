@@ -157,7 +157,7 @@ fun CheckIfInDebugMode(sm: SyncManager, isInDebugMode: (Boolean) -> Unit) {
             isInDebugMode(r.first)
 
             // wait for 5 minutes
-            delay(1 * 60 * 1000L)
+            delay(5 * 60 * 1000L)
         }
     }
 }

@@ -42,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -70,6 +71,7 @@ import com.ion606.workoutapp.elements.InputFieldCompact
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
+import com.ion606.workoutapp.logic.DisplayTimer
 import com.ion606.workoutapp.logic.StartTimer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -107,12 +109,13 @@ class DisplayActiveExercise {
         @Composable
         fun DisplayActiveExerciseScreen(
             activeExercise: MutableState<ActiveExercise?>,
-            triggerExerciseSave: (ActiveExercise) -> Unit,
+            triggerExerciseSave: (ActiveExercise, SuperSet) -> Unit,
+            currentSuperset: MutableState<SuperSet?>,
             context: Context,
             nhelper: NotificationManager
-//            triggerExerciseLoad: () -> ActiveExercise?
         ) {
             val exercise = activeExercise.value ?: return
+            val superset = currentSuperset.value ?: return
 
             Log.d(TAG, "Displaying active exercise: $exercise")
 
@@ -140,6 +143,29 @@ class DisplayActiveExercise {
                     title = "Invalid Time",
                     text = "Please enter a valid time."
                 )
+            }
+
+            // track the countdown in a state so Compose will recompose:
+            val currentSetTime = remember { mutableStateOf(0) }
+
+            LaunchedEffect(timerSetr.value) {
+                if (timerSetr.value != null) {
+                    currentSetTime.value = timerSetr.value!!.value
+                    // run a loop that decrements currentSetTime every second
+                    while (currentSetTime.value > 0) {
+                        delay(1000)
+                        currentSetTime.value -= 1
+                    }
+                    // done
+                    isTimerVisible.value = false
+                    timerSetr.value = null
+                }
+            }
+
+            if (isTimerVisible.value) {
+                DisplayTimer(timeLeft = currentSetTime.value) {
+                    // TODO: handle pause logic
+                }
             }
 
             if (timerSetr.value != null) {
@@ -202,13 +228,16 @@ class DisplayActiveExercise {
 
                     // "+" Button
                     Row(
-                        modifier = Modifier.fillMaxWidth().align(Alignment.Start)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.Start)
                     ) {
                         // go back?
                         IconButton(
                             onClick = {
-                                triggerExerciseSave(exercise)
+                                triggerExerciseSave(exercise, superset)
                                 activeExercise.value = null
+                                currentSuperset.value = null
                             },
                         ) {
                             Icon(
@@ -227,15 +256,17 @@ class DisplayActiveExercise {
                                     add(ExerciseSetDataObj(0)) // default
                                 }
 
-                                activeExercise.value?.let {
+                                exercise.let {
                                     it.reps?.add(ExerciseSetDataObj(0))
                                 }
-                                activeExercise.value?.let {
+                                exercise.let {
                                     it.times?.add(ExerciseSetDataObj(0))
                                 }
-                                activeExercise.value?.let {
+                                exercise.let {
                                     it.weight?.add(ExerciseSetDataObj(0))
                                 }
+
+                                superset.updateExercise(exercise)
 
                                 coroutineScope.launch {
                                     val targetIndex = itemList.value.size - 1
@@ -260,14 +291,12 @@ class DisplayActiveExercise {
                         }
                     }
 
-                    // Header with exercise title
                     Text(
                         text = exercise.exercise.title, style = TextStyle(
                             color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold
                         )
                     )
 
-                    // Button to toggle visibility
                     Button(
                         onClick = { isInfoExpanded.value = !isInfoExpanded.value },
                         modifier = Modifier.fillMaxWidth(),
@@ -308,7 +337,7 @@ class DisplayActiveExercise {
                             var editingTimer by remember { mutableStateOf(false) }
 
                             // permamnt string to not tirgger the timer
-                            var restTimeStr by remember { mutableIntStateOf(restTimer.intValue) }
+                            var restTimeStr by remember { mutableIntStateOf(setItem.restTime) }
 
                             AnimatedVisibility(
                                 visible = isVisible,
@@ -352,12 +381,20 @@ class DisplayActiveExercise {
                                         val reststr = it!!.toIntOrNull();
                                         if (reststr == null || reststr <= 0) return@CreateAlertDialog
 
+                                        Log.d(TAG, "Rest time changed to $reststr")
+
                                         restTimeStr = reststr
                                         itemList.value = itemList.value.toMutableList().apply {
-                                                this[i] =
-                                                    setItem.copy(restTime = reststr)
-                                            }
-                                            editingTimer = false
+                                            this[i] = setItem.copy(restTime = reststr)
+                                        }
+
+                                        if (exercise.exercise.timeBased) exercise.times =
+                                            itemList.value
+                                        else exercise.reps = itemList.value
+                                        exercise.restTime = reststr
+
+                                        triggerExerciseSave(exercise, superset)
+                                        editingTimer = false
                                     }
                                 }
                             }
@@ -389,7 +426,7 @@ class DisplayActiveExercise {
 
                                         exercise.times = itemList.value
                                         Log.d(TAG, "removed set $setItem from $exercise")
-                                        triggerExerciseSave(exercise)
+                                        triggerExerciseSave(exercise, superset)
                                     }
                                 }
 
@@ -462,7 +499,7 @@ class DisplayActiveExercise {
                                                             this[i] = setItem.copy(value = newTime)
                                                         }
                                                     exercise.times = itemList.value
-                                                    triggerExerciseSave(exercise)
+                                                    triggerExerciseSave(exercise, superset)
                                                 })
 
                                             Text(
@@ -491,7 +528,7 @@ class DisplayActiveExercise {
                                                             this[i] = setItem.copy(value = newTime)
                                                         }
                                                     exercise.times = itemList.value
-                                                    triggerExerciseSave(exercise)
+                                                    triggerExerciseSave(exercise, superset)
                                                 })
                                         } else {
                                             InputField(value = setItem.value.toString(),
@@ -509,7 +546,7 @@ class DisplayActiveExercise {
                                                                 setItem.copy(value = updatedReps)
                                                         }
                                                     exercise.reps = itemList.value
-                                                    triggerExerciseSave(exercise)
+                                                    triggerExerciseSave(exercise, superset)
                                                 })
                                         }
 
@@ -531,7 +568,7 @@ class DisplayActiveExercise {
                                                         this[itemList.value.indexOf(setItem)] =
                                                             ExerciseSetDataObj(updatedWeight)
                                                     }
-                                                triggerExerciseSave(exercise)
+                                                triggerExerciseSave(exercise, superset)
                                             })
 
                                     }
@@ -540,6 +577,15 @@ class DisplayActiveExercise {
                         }
                     }
                 }
+
+                val goToNextExercise = goToNextExercise(
+                    superset,
+                    restTimer,
+                    itemList,
+                    activeExercise,
+                    exercise,
+                    triggerExerciseSave
+                )
 
                 // Start/Complete button
                 if (restTimer.intValue <= 0 && itemList.value.find { !it.isDone } != null) {
@@ -561,52 +607,24 @@ class DisplayActiveExercise {
                                     Icons.Default.Timer, contentDescription = "Start Timer"
                                 )
                             }
+                        }
 
-                            Button(
-                                onClick = {
-                                    val i = itemList.value.indexOfFirst { !it.isDone }
-                                    itemList.value = itemList.value.toMutableList().apply {
-                                        // TODO: add value change
-                                        this[i] = itemList.value[i].copy(isDone = true)
-                                    }
-                                    exercise.times = itemList.value
-
-                                    Log.d(TAG, "Starting timer for set: ${itemList.value[i]}")
-                                    timerSetr.value = itemList.value[i]
-
-                                    Log.d(TAG, "Marked set $i as done for $exercise")
-                                    triggerExerciseSave(exercise)
-                                }, modifier = Modifier.align(Alignment.Bottom)
-                            ) {
-                                Text(
-                                    text = "Log Set", color = Color.White
-                                )
-                            }
-                        } else {
-                            Button(onClick = {
-                                val i = itemList.value.indexOfFirst { !it.isDone }
-                                itemList.value = itemList.value.toMutableList().apply {
-                                    this[i] = itemList.value[i].copy(isDone = true)
-                                }
-                                exercise.reps = itemList.value
-
-                                Log.d(TAG, "Starting timer for set: ${itemList.value[i]}")
-                                restTimer.intValue = itemList.value[i].restTime
-
-                                Log.d(TAG, "Marked set $i as done for $exercise")
-                                triggerExerciseSave(exercise)
-                            }) {
-                                Text(
-                                    text = "Log Set", color = Color.White
-                                )
-                            }
+                        Button(
+                            onClick = {
+                                goToNextExercise()
+                            }, modifier = Modifier.align(Alignment.Bottom)
+                        ) {
+                            Text(
+                                text = "Log Set", color = Color.White
+                            )
                         }
                     }
                 } else {
                     Button(onClick = {
                         exercise.isDone = true
-                        triggerExerciseSave(exercise)
+                        triggerExerciseSave(exercise, superset)
                         activeExercise.value = null
+                        currentSuperset.value = null
                     }) {
                         Text(
                             text = "Complete Exercise", color = Color.White
@@ -614,6 +632,55 @@ class DisplayActiveExercise {
                     }
                 }
             }
+        }
+
+        @Composable
+        private fun goToNextExercise(
+            superset: SuperSet,
+            restTimer: MutableIntState,
+            itemList: MutableState<MutableList<ExerciseSetDataObj>>,
+            activeExercise: MutableState<ActiveExercise?>,
+            exercise: ActiveExercise,
+            triggerExerciseSave: (ActiveExercise, SuperSet) -> Unit
+        ): () -> Unit {
+            val goToNextExercise = {
+                Log.d(
+                    TAG,
+                    "Going to next exercise --> ${superset.isOnLastExercise()} | ${superset.currentExerciseIndex} | ${superset.exercises.size}"
+                )
+
+                if (superset.isOnLastExercise()) {
+                    restTimer.intValue = superset.getCurrentExercise()?.restTime ?: 0
+                    superset.currentExerciseIndex = 0
+                } else {
+                    superset.currentExerciseIndex++
+                    val nextExercise = superset.getCurrentExercise()
+                    Log.d(TAG, "Switching to next exercise: $nextExercise")
+                    activeExercise.value = nextExercise
+                }
+
+                // Mark the current set as done
+                val i = if (exercise.exercise.timeBased) {
+                    exercise.times!!.indexOfFirst { !it.isDone }
+                } else {
+                    exercise.reps!!.indexOfFirst { !it.isDone }
+                }
+
+                if (exercise.exercise.timeBased && i != -1) {
+                    exercise.times!![i] = exercise.times?.get(i)?.apply {
+                        restTime = restTimer.intValue
+                        isDone = true
+                    }!!
+                } else if (!exercise.exercise.timeBased && i != -1) {
+                    exercise.reps!![i] = exercise.reps?.get(i)?.apply {
+                        restTime = restTimer.intValue
+                        isDone = true
+                    }!!
+                }
+
+                triggerExerciseSave(exercise, superset)
+            }
+            return goToNextExercise
         }
     }
 }
