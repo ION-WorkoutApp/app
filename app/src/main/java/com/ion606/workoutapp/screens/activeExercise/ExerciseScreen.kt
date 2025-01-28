@@ -7,13 +7,11 @@ import android.content.Context
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.with
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -468,9 +466,7 @@ class ExerciseScreen {
                             coroutineScope.launch {
                                 dao.update(superset)
                                 Log.d(TAG, "updated DAO for exercise: ${exercise.exercise.title}")
-                                if (exitScreen) {
-                                    workoutViewModel.clearCurrentExercise()
-                                }
+                                if (exitScreen) workoutViewModel.clearCurrentExercise()
                             }
                         },
                         advanceToNextExercise = { nextExercise: ActiveExercise?, superset: SuperSet ->

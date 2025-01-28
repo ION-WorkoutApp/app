@@ -1,3 +1,4 @@
+// LogTopBar.kt
 package com.ion606.workoutapp.screens.logs
 
 import android.annotation.SuppressLint
@@ -50,7 +51,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -130,7 +130,6 @@ fun MonthlyCalendar(
     }
 }
 
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SwipeableMonthlyCalendar(
@@ -139,7 +138,7 @@ fun SwipeableMonthlyCalendar(
     modifier: Modifier,
     onDayClick: (Pair<String, String>) -> Unit,
 
-) {
+    ) {
     val currentDate = remember { java.time.LocalDate.now() }
     val currentYear = currentDate.year
     val currentMonth = currentDate.monthValue
@@ -222,7 +221,6 @@ fun SwipeableMonthlyCalendar(
     }
 }
 
-
 @RequiresApi(Build.VERSION_CODES.O)
 fun transformTime(currentMonth: Int, currentYear: Int, currentDay: Int = 1): ZonedDateTime {
     return ZonedDateTime.now().withMonth(currentMonth).withYear(currentYear)
@@ -259,14 +257,12 @@ fun getLocalDayRangeInUTC(
     return Pair(startOfDayISO, endOfDayISO)
 }
 
-
 @SuppressLint("NewApi")
 fun getCurrentWeekDays(currentMonth: Int, currentYear: Int): List<Int> {
     val now = transformTime(currentMonth, currentYear, ZonedDateTime.now().dayOfMonth)
     val firstDayOfWeek = now.minusDays((now.dayOfWeek.value - 1).toLong())
     return (0..6).map { firstDayOfWeek.plusDays(it.toLong()).dayOfMonth }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable

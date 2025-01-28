@@ -417,7 +417,9 @@ class DisplayActiveExercise {
                                             removeAt(i)
                                         }
 
-                                        exercise.times = itemList.value
+                                        if (exercise.exercise.timeBased) exercise.times = itemList.value
+                                        else exercise.reps = itemList.value
+
                                         Log.d(TAG, "removed set $setItem from $exercise")
                                         triggerExerciseSave(exercise, superset, false)
                                     }
