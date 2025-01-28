@@ -1,6 +1,5 @@
 package com.ion606.workoutapp.dataObjects
 
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Embedded
@@ -60,18 +59,16 @@ class SetListConverter {
 
 class ActiveExerciseListConverter {
     @TypeConverter
-    fun fromList(exercises: SnapshotStateList<ActiveExercise>): String {
+    fun fromList(exercises: MutableList<ActiveExercise>): String {
         val gson = Gson()
         return gson.toJson(exercises)
     }
 
     @TypeConverter
-    fun toList(json: String): SnapshotStateList<ActiveExercise> {
+    fun toList(json: String): MutableList<ActiveExercise> {
         val gson = Gson()
         val type = object : TypeToken<List<ActiveExercise>>() {}.type
-        return SnapshotStateList<ActiveExercise>().apply {
-            addAll(gson.fromJson(json, type))
-        }
+        return gson.fromJson(json, type)
     }
 }
 

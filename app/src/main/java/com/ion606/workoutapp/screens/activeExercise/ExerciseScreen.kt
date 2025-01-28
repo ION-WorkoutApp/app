@@ -270,8 +270,6 @@ class ExerciseScreen {
             }
 
             if (supersets.isNotEmpty() && !dispSelPop.value) {
-                Log.d(TAG, "Exercises size: ${supersets.size}")
-
                 if (currentSuperset.value == null) {
                     Column(
                         modifier = Modifier
@@ -337,23 +335,20 @@ class ExerciseScreen {
                             items(items = supersets, key = { it.id }) { superSet ->
                                 val xOffset = remember { Animatable(0f) }
 
-                                Modifier
-                                    .fillMaxWidth()
-                                Box(
-                                    modifier = Modifier
-                                        .offset { IntOffset(xOffset.value.roundToInt(), 0) }
-                                ) {
-                                    SuperSetBox(
-                                        superSet = superSet,
+                                Modifier.fillMaxWidth()
+                                Box(modifier = Modifier.offset {
+                                    IntOffset(
+                                        xOffset.value.roundToInt(), 0
+                                    )
+                                }) {
+                                    SuperSetBox(superSet = superSet,
                                         viewModel = workoutViewModel,
                                         superSetBounds = superSetBoundsList,
                                         onExerciseClick = { clickedExercise ->
                                             workoutViewModel.setCurrentExercise(
-                                                clickedExercise,
-                                                superSet
+                                                clickedExercise, superSet
                                             )
-                                        }
-                                    )
+                                        })
                                 }
                             }
                         }
@@ -362,7 +357,17 @@ class ExerciseScreen {
             } else if (supersets.isEmpty() && !dispSelPop.value) {
                 val exercisesToAdd = remember { mutableStateOf<List<Exercise>?>(null) }
 
-                // This effect will only run when exercisesToAdd.value changes
+                // reset the dao ("clear the cache" ish)
+                LaunchedEffect(Unit) {
+                    coroutineScope.launch {
+                        dao.getAll().forEach { exercise ->
+                            dao.delete(exercise)
+                            supersets.removeAll { it.id == exercise.id }
+                            Log.d(TAG, "Deleted exercise: ${exercise.id}")
+                        }
+                    }
+                }
+
                 LaunchedEffect(exercisesToAdd.value) {
                     val newExercises = exercisesToAdd.value ?: return@LaunchedEffect
                     val toAdd = exercisesToActiveExercises(newExercises)
@@ -400,7 +405,7 @@ class ExerciseScreen {
                             }
                             Spacer(modifier = Modifier.size(20.dp))
                         } else {
-                            LaunchedEffect("endworkout") {
+                            LaunchedEffect("savedworkoutsbtn") {
                                 coroutineScope.launch {
                                     val r = syncManager.sendData(
                                         mapOf(), path = "workouts/savedworkouts", method = "GET"
@@ -412,8 +417,7 @@ class ExerciseScreen {
                                         )
                                         if (!res.success) {
                                             if (!res.message.isNullOrEmpty()) Log.d(
-                                                "ERROR!",
-                                                res.message
+                                                "ERROR!", res.message
                                             )
                                         } else savedWorkouts.value = res.workouts.toList()
                                     } else Log.d("ERROR!", r.second.toString())
@@ -438,20 +442,16 @@ class ExerciseScreen {
             }
 
             if (currentExercise.value != null && currentSuperset.value != null) {
-                AnimatedContent(
-                    targetState = currentExercise.value,
-                    transitionSpec = {
-                        slideInHorizontally(
-                            initialOffsetX = { fullWidth -> fullWidth },
-                            animationSpec = tween(durationMillis = 300)
-                        ) togetherWith slideOutHorizontally(
-                            targetOffsetX = { fullWidth -> -fullWidth },
-                            animationSpec = tween(durationMillis = 300)
-                        )
-                    }
-                ) { _ ->
-                    DisplayActiveExercise.DisplayActiveExerciseScreen(
-                        activeExercise = currentExercise,
+                AnimatedContent(targetState = currentExercise.value, transitionSpec = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(durationMillis = 300)
+                    ) togetherWith slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(durationMillis = 300)
+                    )
+                }) { _ ->
+                    DisplayActiveExercise.DisplayActiveExerciseScreen(activeExercise = currentExercise,
                         context = context,
                         nhelper = nhelper,
                         currentSuperset = currentSuperset,
@@ -465,15 +465,36 @@ class ExerciseScreen {
 
                             coroutineScope.launch {
                                 dao.update(superset)
-                                Log.d(TAG, "updated DAO for exercise: ${exercise.exercise.title}")
+                                Log.d(
+                                    TAG, "updated DAO for exercise: ${exercise.exercise.title}"
+                                )
                                 if (exitScreen) workoutViewModel.clearCurrentExercise()
                             }
                         },
                         advanceToNextExercise = { nextExercise: ActiveExercise?, superset: SuperSet ->
-                            if (superset.isOnFirstExercise() || nextExercise == null) workoutViewModel.clearCurrentExercise()
-                            else workoutViewModel.setCurrentExercise(nextExercise, superset)
-                        }
-                    )
+                            // if the current exercise is completed, mark it as done
+                            if (currentExercise.value!!.isDone) {
+                                currentExercise.value!!.isDone = true
+                                coroutineScope.launch { dao.update(superset) }
+                            }
+
+                            // superset over
+                            if (nextExercise == null) {
+                                Log.d(TAG, "Completed superset ${superset.id}")
+                                superset.isDone = true
+                                workoutViewModel.clearCurrentExercise()
+                                coroutineScope.launch { dao.update(superset) }
+                                return@DisplayActiveExerciseScreen
+                            }
+
+                            if (superset.isOnFirstExercise()) {
+                                // "reset" the superset order (go back to first)
+                                workoutViewModel.clearCurrentExercise()
+                                workoutViewModel.setCurrentExercise(
+                                    superset.exercises.first(), superset
+                                )
+                            } else workoutViewModel.setCurrentExercise(nextExercise, superset)
+                        })
                 }
             }
         }

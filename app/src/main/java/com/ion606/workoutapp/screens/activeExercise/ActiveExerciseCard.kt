@@ -171,7 +171,7 @@ fun SuperSetBox(
                         )
                 ) {
                     Text(
-                        text = "Superset (${superSet.exercises.size} Exercises)",
+                        text = "Superset (${superSet.exercises.size} Exercises)${if (superSet.isDone) " (Done)" else ""}",
                         style = MaterialTheme.typography.titleMedium,
                         fontSize = 18.sp,
                         color = if (superSet.isDone) Color.LightGray else Color.White,
@@ -481,7 +481,7 @@ fun ExerciseBox(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFF1E1E1E)) // Inner background color
-                    .clickable(enabled = !exercise.isDone) {
+                    .clickable {
                         onExerciseClick(exercise)
                     }
             ) {
@@ -505,13 +505,12 @@ fun ExerciseBox(
                     )
 
                     val secondLinePart = if (exercise.reps != null) {
-                        "${exercise.reps!!.size} reps"
-                    } else {
-                        "${exercise.times} each"
+                        "${(exercise.reps?.map { it.value })?.average() ?: "???"} average reps"
                     }
+                    else "${(exercise.times?.map { it.value })?.average() ?: "???"} average time"
 
                     Text(
-                        text = "${exercise.sets} sets, $secondLinePart",
+                        text = "${exercise.reps!!.size} sets, $secondLinePart",
                         style = MaterialTheme.typography.bodySmall,
                         fontSize = 14.sp,
                         color = if (exercise.isDone) Color.Gray else Color(0xFFAAAAAA),

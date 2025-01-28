@@ -2,7 +2,6 @@ package com.ion606.workoutapp.screens.activeExercise
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
@@ -27,10 +26,13 @@ import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 
+private const val TAG = "SuperSet"
+
 @Entity
 data class SuperSet(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    @TypeConverters(ActiveExerciseListConverter::class) var exercises: SnapshotStateList<ActiveExercise> = SnapshotStateList(),
+    @TypeConverters(ActiveExerciseListConverter::class)
+    var exercises: MutableList<ActiveExercise> = mutableListOf(),
     var isDone: Boolean = false,
     var isSingleExercise: Boolean = false,
     var currentExerciseIndex: Int = 0
@@ -84,10 +86,30 @@ data class SuperSet(
         return (this.isSingleExercise || (this.currentExerciseIndex == 0))
     }
 
-    fun goToNextExercise(): ActiveExercise? {
-        if (this.isSingleExercise) return this.getCurrentExercise()
-        else if (this.currentExerciseIndex > this.exercises.size - 2) this.currentExerciseIndex = 0
+    private fun advanceExercisePointer() {
+        if (this.currentExerciseIndex >= this.exercises.size - 1) this.currentExerciseIndex = 0
         else this.currentExerciseIndex++
+    }
+
+    // the only case where this would return null is if the SUPERSET is done
+    fun goToNextExercise(): ActiveExercise? {
+        if (this.isSingleExercise) {
+            return if (this.isDone) null else this.getCurrentExercise()
+        }
+
+        var foundNotDone = false
+        for (i in 0 until this.exercises.size) {
+            advanceExercisePointer()
+            if (getCurrentExercise()?.isDone == false) {
+                foundNotDone = true
+                break
+            }
+        }
+
+        // done handling happens in caller
+        if (!foundNotDone) return null
+
+        // if we are on the last exercise, go to the first exercise
         this.getCurrentExercise()?.let { this.setCurrentExercise(it) }
         return this.getCurrentExercise()
     }
