@@ -4,34 +4,23 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.lazy.LazyListState
 import com.google.gson.Gson
-import com.ion606.workoutapp.dataObjects.ParsedWorkoutResponse
+import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
 import org.json.JSONArray
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 
-// helper functions for lazy list states
-internal fun LazyListState.reachedBottom(buffer: Int = 1): Boolean {
-    val lastVisibleItem = this.layoutInfo.visibleItemsInfo.lastOrNull()
-    return lastVisibleItem?.index != 0 && lastVisibleItem?.index == this.layoutInfo.totalItemsCount - buffer
-}
-
-internal fun LazyListState.reachedTop(buffer: Int = 0): Boolean {
-    val firstVisibleItem = this.layoutInfo.visibleItemsInfo.firstOrNull()
-    return firstVisibleItem?.index == buffer
-}
-
-
-fun parseWorkoutResponse(json: String): ParsedWorkoutResponse? {
+fun parseWorkoutResponse(json: String): SavedWorkoutResponse? {
     return try {
         val gson = Gson()
-        gson.fromJson(json, ParsedWorkoutResponse::class.java)
+        gson.fromJson(json, SavedWorkoutResponse::class.java)
     } catch (e: Exception) {
         Log.e("LogScreen", "Parsing error: ${e.message}")
         e.printStackTrace()
@@ -39,29 +28,44 @@ fun parseWorkoutResponse(json: String): ParsedWorkoutResponse? {
     }
 }
 
-@SuppressLint("NewApi")
-fun formatTimestamp(timestamp: String, returnTime: Boolean = false): String {
-    // parse the UTC timestamp
-    val zonedDateTime = ZonedDateTime.parse(timestamp)
-
-    // convert to local time zone (last time I forgot the `ZoneId.systemDefault())`)
-    val localDateTime = zonedDateTime.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
-
-    // determine the default date format
-    val defaultDateFormat = (DateFormat.getDateInstance(
-        DateFormat.SHORT, Locale.getDefault()
-    ) as SimpleDateFormat).toPattern()
-
-    // define the formatter based on the returnTime flag
-    val formatter = if (returnTime) {
-        DateTimeFormatter.ofPattern("HH:mm:ss")
-    } else {
-        DateTimeFormatter.ofPattern(defaultDateFormat)
+fun parseSavedWorkoutResponse(json: String): SavedWorkoutResponse? {
+    return try {
+        val gson = Gson()
+        gson.fromJson(json, SavedWorkoutResponse::class.java)
+    } catch (e: Exception) {
+        Log.e("LogScreen", "Parsing error: ${e.message}")
+        e.printStackTrace()
+        null
     }
-
-    return localDateTime.format(formatter)
 }
 
+
+@SuppressLint("NewApi")
+fun formatTimestamp(timestamp: String, returnTime: Boolean = false): String {
+    return try {
+        // Define the formatter matching the log's timestamp format
+        val instant = Instant.parse(timestamp) // Parses "2025-01-28T16:16:46.003Z"
+        val localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+
+
+        // Determine the default date format
+        val defaultDateFormat = (DateFormat.getDateInstance(
+            DateFormat.SHORT, Locale.getDefault()
+        ) as SimpleDateFormat).toPattern()
+
+        // Define the formatter based on the returnTime flag
+        val outputFormatter = if (returnTime) {
+            DateTimeFormatter.ofPattern("HH:mm:ss")
+        } else {
+            DateTimeFormatter.ofPattern(defaultDateFormat)
+        }
+
+        localDateTime.format(outputFormatter)
+    } catch (e: Exception) {
+        Log.e("LogScreen", "Timestamp parsing error: ${e.message}")
+        timestamp // Return the original timestamp in case of an error
+    }
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun parseTimestamps(jsonString: String): List<ZonedDateTime> {
@@ -92,4 +96,3 @@ fun getDaysForMonth(
         date.year == displayedYear && date.monthValue == displayedMonth
     }.map { it.dayOfMonth }
 }
-

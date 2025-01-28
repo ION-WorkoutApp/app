@@ -2,7 +2,6 @@ package com.ion606.workoutapp.screens.logs
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,11 +31,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,48 +44,69 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.ion606.workoutapp.dataObjects.ParsedActiveExercise
 import com.ion606.workoutapp.dataObjects.ParsedExercise
-import com.ion606.workoutapp.dataObjects.ParsedWorkoutResponse
-import com.ion606.workoutapp.elements.CreateWorkoutLogDropdown
-import com.ion606.workoutapp.helpers.Alerts
-import com.ion606.workoutapp.helpers.Alerts.Companion.CreateAlertDialog
+import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
+import com.ion606.workoutapp.dataObjects.Workout
+import com.ion606.workoutapp.dataObjects.convertActiveExerciseToParsed
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.WorkoutBottomBar
-import kotlinx.coroutines.launch
+import com.ion606.workoutapp.screens.activeExercise.SuperSet
 import java.time.ZonedDateTime
+
+// Utility Extensions
+fun LazyListState.reachedBottom(buffer: Int = 1): Boolean {
+    val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+    return lastVisibleItem != null && lastVisibleItem.index >= layoutInfo.totalItemsCount - buffer
+}
+
+fun LazyListState.reachedTop(buffer: Int = 0): Boolean {
+    val firstVisibleItem = layoutInfo.visibleItemsInfo.firstOrNull()
+    return firstVisibleItem?.index == buffer
+}
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun DarkThemeWorkoutResponse(
-    sm: SyncManager, userManager: UserManager, navController: NavHostController, context: Context
+    sm: SyncManager,
+    userManager: UserManager,
+    navController: NavHostController,
+    context: Context
 ) {
     val listState = rememberLazyListState()
 
-    // initial response state
-    var response by remember { mutableStateOf<ParsedWorkoutResponse?>(null) }
+    // Initial response state
+    var response by remember { mutableStateOf<SavedWorkoutResponse?>(null) }
     var error by remember { mutableStateOf("") }
 
-    val tt = ZonedDateTime.now();
-    var workoutDate by remember { mutableStateOf(getLocalDayRangeInUTC(tt.year, tt.monthValue, tt.dayOfMonth)) }
+    val tt = ZonedDateTime.now()
+    var workoutDate by remember {
+        mutableStateOf(
+            getLocalDayRangeInUTC(
+                tt.year,
+                tt.monthValue,
+                tt.dayOfMonth
+            )
+        )
+    }
 
-    val pageManager by remember {
-        mutableStateOf(object {
+    val pageManager = remember {
+        object {
             var currentPage = 0
             var previousPage = 0
             var nextPage = 1
             var hasNextPage = true
-        })
+        }
     }
 
-    // flag to prevent multiple requests at the same time
+    // Flags to prevent multiple requests at the same time
     var isLoading by remember { mutableStateOf(false) }
     var isLoadingDay by remember { mutableStateOf(false) }
     var dates by remember { mutableStateOf<List<ZonedDateTime>>(emptyList()) }
+    val isMinimalist by userManager.isMinimalistModeFlow.collectAsState(initial = false)
 
-    // fetch initial workouts
+    // Fetch initial workouts
     LaunchedEffect(workoutDate) {
         if (!isLoading) {
             isLoading = true
@@ -97,7 +118,7 @@ fun DarkThemeWorkoutResponse(
                 method = "GET"
             )
             if (result.first) {
-                val parsedResponse = parseWorkoutResponse(result.second.toString())
+                val parsedResponse = parseSavedWorkoutResponse(result.second.toString())
                 if (parsedResponse != null) {
                     response = parsedResponse
                 } else {
@@ -119,29 +140,34 @@ fun DarkThemeWorkoutResponse(
         }
     }
 
-    Scaffold(bottomBar = { WorkoutBottomBar(navController, 1) }, topBar = {
-        LogTopBar(dates) { workoutDate = it }
-    }) { innerPadding ->
+    Scaffold(
+        bottomBar = { WorkoutBottomBar(navController, 1) },
+        topBar = {
+            LogTopBar(dates) { workoutDate = it }
+        }
+    ) { innerPadding ->
         when {
             (response == null || isLoadingDay) -> {
-                // loading state
+                // Loading state
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .background(Color(0xFF121212)), contentAlignment = Alignment.Center
+                        .background(Color(0xFF121212)),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(text = "Loading workouts...", color = Color.Gray, fontSize = 18.sp)
                 }
             }
 
             response?.workouts.isNullOrEmpty() -> {
-                // no workouts available
+                // No workouts available
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .background(Color(0xFF121212)), contentAlignment = Alignment.Center
+                        .background(Color(0xFF121212)),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(text = "No workouts available", color = Color.Gray, fontSize = 18.sp)
                 }
@@ -157,18 +183,20 @@ fun DarkThemeWorkoutResponse(
                     LazyColumn(
                         state = listState, modifier = Modifier.fillMaxSize()
                     ) {
-                        if (!response?.workouts.isNullOrEmpty()) {
-                            items(response!!.workouts) { workout ->
+                        items(response!!.workouts) { workout ->
+                            if (isMinimalist) {
+                                MinimalistWorkoutCard(workout, userManager, sm, navController, context)
+                            } else {
                                 WorkoutCard(workout, userManager, sm, navController, context)
                             }
+
                         }
-                        else Log.d("WORKOUTS", "No workouts available for $workoutDate")
                     }
 
                     val reachedBottom by remember { derivedStateOf { listState.reachedBottom() } }
                     val reachedTop by remember { derivedStateOf { listState.reachedTop() } }
 
-                    // load more workouts when reaching the bottom
+                    // Load more workouts when reaching the bottom
                     LaunchedEffect(reachedBottom) {
                         if (reachedBottom && pageManager.hasNextPage && !isLoading) {
                             isLoading = true
@@ -178,7 +206,7 @@ fun DarkThemeWorkoutResponse(
                                 method = "GET"
                             )
                             if (result.first) {
-                                val parsedResponse = parseWorkoutResponse(result.second.toString())
+                                val parsedResponse = parseSavedWorkoutResponse(result.second.toString())
                                 pageManager.hasNextPage =
                                     (parsedResponse?.workouts?.isNotEmpty() == true)
 
@@ -199,7 +227,7 @@ fun DarkThemeWorkoutResponse(
                         }
                     }
 
-                    // handle top refresh (if needed)
+                    // Handle top refresh (if needed)
                     LaunchedEffect(reachedTop) {
                         if (reachedTop && pageManager.currentPage > 0 && !isLoading) {
                             isLoading = true
@@ -209,7 +237,7 @@ fun DarkThemeWorkoutResponse(
                                 method = "GET"
                             )
                             if (result.first) {
-                                val parsedResponse = parseWorkoutResponse(result.second.toString())
+                                val parsedResponse = parseSavedWorkoutResponse(result.second.toString())
                                 if (parsedResponse != null) {
                                     pageManager.currentPage = pageManager.previousPage
                                     response = response!!.copy(
@@ -233,159 +261,83 @@ fun DarkThemeWorkoutResponse(
 
 @Composable
 fun WorkoutCard(
-    workout: ParsedActiveExercise,
+    workout: Workout,
     userManager: UserManager,
     syncManager: SyncManager,
     navController: NavHostController,
     context: Context
 ) {
+    val isMinimalist by userManager.isMinimalistModeFlow.collectAsState(initial = false)
+
     Card(
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)) // Dark card background
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
     ) {
-        var visible by remember { mutableStateOf(true) }
-        var errored by remember { mutableStateOf<String?>(null) }
-        val scope = rememberCoroutineScope()
+        Column(modifier = Modifier.padding(16.dp)) {
+            // workout header
+            Text(
+                text = "Workout on ${formatTimestamp(workout.createdAt)} at ${formatTimestamp(workout.createdAt, true)}",
+                fontSize = if (isMinimalist) 16.sp else 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE0E0E0)
+            )
+            Spacer(modifier = Modifier.height(if (isMinimalist) 4.dp else 8.dp))
 
-        val savedWorkout = remember { mutableListOf<ParsedActiveExercise>() }
-        if (savedWorkout.isNotEmpty()) {
-            var workoutName by remember { mutableStateOf<String?>(null) }
-            var error by remember { mutableStateOf("") }
-
-            CreateAlertDialog(
-                "Enter saved workout name", context
-            ) {
-                if (!it.isNullOrEmpty()) workoutName = it
-                else error = "Failed to read workout name"
-            }
-
-            if (error.isNotEmpty()) {
-                CreateAlertDialog(
-                    error, context
-                ) {
-                    error = ""
-                }
-            } else if (!workoutName.isNullOrEmpty()) {
-                LaunchedEffect("saveworkoutsend") {
-                    scope.launch {
-                        val r = syncManager.sendData(
-                            mapOf(
-                                "workout" to mapOf(
-                                    "exercises" to savedWorkout, "totalTime" to 0
-                                ), "workoutname" to workoutName.toString()
-                            ), path = "workouts/savedworkouts"
-                        )
-
-                        if (r.first) {
-                            error = "Successfully saved workout"
-                            savedWorkout.clear()
-                        } else error = r.second.toString()
-
-                        Log.d("SAVE RESULT", r.toString())
+            // display supersets
+            if (workout.supersets.isNotEmpty()) {
+                workout.supersets.forEach { superset ->
+                    if (isMinimalist) {
+                        MinimalistSupersetDetails(superset)
+                    } else {
+                        SupersetDetails(superset)
                     }
                 }
             }
-        }
 
-        if (visible) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Workout on ${formatTimestamp(workout.createdAt)} at ${
-                            formatTimestamp(
-                                workout.createdAt, true
-                            )
-                        }",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE0E0E0)
-                    )
+            Spacer(modifier = Modifier.height(if (isMinimalist) 4.dp else 8.dp))
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Display exercises in the workout
-                    var weightSum = 0
-                    var setSum = 0
-                    workout.exercises.forEach { exercise ->
-                        ExerciseDetails(exercise)
-                        setSum += if (exercise.timeBased) exercise.times?.size
-                            ?: 0 else exercise.reps?.size ?: 0
-                        weightSum += exercise.weight?.sumOf { it.value } ?: 0
-                    }
-
-                    // Display workout-specific details
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "${workout.exercises.size} total exercises, $setSum total sets, ${weightSum}kg total weight",
-                        fontSize = 14.sp,
-                        color = Color(0xFFB0B0B0)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                var editTime by remember { mutableStateOf(false) }
-
-                if (editTime) {
-                    CreateAlertDialog(
-                        title = "New Workout Time", context = context, isTimeInput = true
-                    ) {
-                        Log.d("EditTime", "New Workout Time: $it")
-                        scope.launch {
-                            val r = syncManager.sendData(
-                                mapOf("workoutId" to workout.id, "newTime" to it.toString()),
-                                path = "workouts/workout",
-                                method = "PUT"
-                            )
-
-                            if (r.first) {
-                                visible = false
-                                navController.navigate("log")
-                            } else errored = r.second.toString()
-
-                            editTime = false
-                        }
-                    }
-                }
-
-                CreateWorkoutLogDropdown("...",
-                    Modifier
-                        .padding(16.dp)
-                        .align(Alignment.TopEnd),
-                    context,
-                    { editTime = true },
-                    {
-                        scope.launch {
-                            val r = userManager.deleteWorkout(workout)
-                            if (r.first) {
-                                visible = false;
-                                navController.navigate("log")
-                            } else errored = r.second.toString();
-                        }
-                    },
-                    {
-                        val toSave = workout.exercises.map {
-                            mapOf(
-                                "exercise" to it,
-                                "sets" to it.sets,
-                                "perset" to if (it.timeBased) it.times else it.reps
-                            )
-                        }
-
-                        Log.d("SAVING", toSave.toString())
-                    })
+            // display general exercise stats
+            if (!isMinimalist) {
+                Text(
+                    text = "${workout.supersets.sumOf { it.exercises.size }} total exercises",
+                    fontSize = 14.sp,
+                    color = Color(0xFFB0B0B0)
+                )
             }
-        } else if (!errored.isNullOrEmpty()) {
-            Alerts.ShowAlert({ errored = null }, "Failed to delete workout", errored!!);
         }
     }
 }
+
+
+@Composable
+fun SupersetDetails(superset: SuperSet) {
+    Column(
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .background(Color(0xFF2C2C2C), shape = RoundedCornerShape(8.dp))
+            .padding(8.dp)
+    ) {
+        Text(
+            text = "🔀 Superset",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFB0B0B0)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // display exercises in the superset
+        superset.exercises.forEach { activeExercise ->
+            val parsedExercise = convertActiveExerciseToParsed(activeExercise)
+            parsedExercise.exercises.forEach { exercise ->
+                ExerciseDetails(exercise)
+            }
+        }
+    }
+}
+
 
 @Composable
 fun ExerciseDetails(exercise: ParsedExercise) {

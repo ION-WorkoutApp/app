@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.ion606.workoutapp.dataObjects.WorkoutDatabase
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.CheckIfInDebugMode
 import com.ion606.workoutapp.helpers.NotificationManager
@@ -39,6 +38,7 @@ import com.ion606.workoutapp.screens.PermissionsManager
 import com.ion606.workoutapp.screens.Signup
 import com.ion606.workoutapp.screens.WorkoutHomeScreen
 import com.ion606.workoutapp.screens.activeExercise.ExerciseScreen
+import com.ion606.workoutapp.screens.activeExercise.WorkoutDatabase
 import com.ion606.workoutapp.screens.logs.LogScreen
 import com.ion606.workoutapp.ui.theme.WorkoutAppTheme
 
@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
         val sm = SyncManager("", this@MainActivity);
         val dataManager = DataManager(this@MainActivity, sm); // Pass the context
         val userManager = UserManager(this@MainActivity, dataManager, sm);
-        val dao = WorkoutDatabase.getInstance(this@MainActivity)?.activeExerciseDao()
+        val dao = WorkoutDatabase.getInstance(this@MainActivity)?.superSetDao()
             ?: return setContent {
                 Alerts.ShowAlert(
                     { finish() },

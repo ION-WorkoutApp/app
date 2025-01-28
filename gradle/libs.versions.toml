@@ -5,6 +5,7 @@ androidxJunit = "1.2.1"
 androidxJunitVersion = "1.2.1"
 byteBuddy = "1.14.2"
 core = "1.6.1"
+datastorePreferences = "1.1.2"
 espressoCoreVersion = "3.6.1"
 espressoIntents = "3.0.2"
 gson = "2.11.0"
@@ -48,6 +49,7 @@ roomKtxVersion = "2.7.0-alpha12"
 [libraries]
 androidx-core = { module = "androidx.test:core", version.ref = "core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-espresso-core-v311 = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxEspressoCore" }
 androidx-espresso-core-v361 = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCoreVersion" }
 androidx-junit-v110 = { module = "androidx.test.ext:junit", version.ref = "androidxJunitVersion" }

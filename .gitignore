@@ -19,3 +19,5 @@ temp.*
 /shelf/
 /workspace.xml
 .attach_pid*
+.idea/discord.xml
+

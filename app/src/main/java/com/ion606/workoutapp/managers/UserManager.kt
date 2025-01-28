@@ -5,10 +5,15 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.navigation.NavController
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
@@ -21,13 +26,28 @@ import com.ion606.workoutapp.dataObjects.SanitizedUserDataObj
 import com.ion606.workoutapp.dataObjects.UserDataObj
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.Alerts.Companion.ConfirmDeleteAccountDialog
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
 
 private const val TAG = "UserManager"
+val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
-class UserManager(context: Context, private val dm: DataManager, private val sm: SyncManager) {
+class UserManager(private val context: Context, private val dm: DataManager, private val sm: SyncManager) {
     private val sharedPreferences: SharedPreferences
     private var userData: UserDataObj? = null
+    private val MINIMALIST_MODE_KEY = booleanPreferencesKey("minimalist_mode")
+    var isMinimalistMode: Boolean by mutableStateOf(false)
+        private set
+
+    val isMinimalistModeFlow: Flow<Boolean>
+        get() = context.dataStore.data.map { preferences ->
+            preferences[MINIMALIST_MODE_KEY] ?: false
+        }
+
 
     init {
         // Initialize EncryptedSharedPreferences
@@ -39,6 +59,12 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
+        runBlocking {
+            isMinimalistMode = context.dataStore.data.map { preferences ->
+                preferences[MINIMALIST_MODE_KEY] ?: false
+            }.first()
+        }
+
     }
 
     sealed class FetchUserDataResult {
@@ -47,22 +73,16 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
     }
 
     data class ExerciseResponse(
-        val exercises: List<Exercise>,
-        val total: Int,
-        val page: Int,
-        val pageSize: Int
+        val exercises: List<Exercise>, val total: Int, val page: Int, val pageSize: Int
     )
 
     fun Map<String, String>.toQueryParams(): String {
-        return this.entries
-            .filter { it.value.isNotEmpty() }
+        return this.entries.filter { it.value.isNotEmpty() }
             .joinToString("&") { "${it.key}=${it.value}" }
     }
 
     suspend fun fetchExercises(
-        filter: ExerciseFilter? = ExerciseFilter(),
-        page: Int? = 0,
-        pageSize: Int = 20
+        filter: ExerciseFilter? = ExerciseFilter(), page: Int? = 0, pageSize: Int = 20
     ): ExerciseResponse {
         val requestData = if (filter != null) mapOf(
             "muscleGroup" to (filter.muscleGroup ?: ""),
@@ -75,9 +95,7 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
         else mapOf()
 
         val response = sm.sendData(
-            emptyMap(),
-            path = "exercises/exercises?${requestData.toQueryParams()}",
-            method = "GET"
+            emptyMap(), path = "exercises/exercises?${requestData.toQueryParams()}", method = "GET"
         )
 
         if (response.first) {
@@ -122,15 +140,6 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
         this.userData = UserDataObj(userData)
     }
 
-    // Add helper methods for secure storage
-    fun saveToPreferences(key: String, value: String) {
-        sharedPreferences.edit().putString(key, value).apply()
-    }
-
-    fun getFromPreferences(key: String): String? {
-        return sharedPreferences.getString(key, null)
-    }
-
     fun clearPreferences(key: String? = null) {
         if (key == null) {
             sharedPreferences.edit().clear().apply()
@@ -156,9 +165,7 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
 
     // the password fields are only needed if you're changing the password or URL
     suspend fun updateUserData(
-        user: SanitizedUserDataObj,
-        oldPassword: String? = null,
-        newPassword: String? = null
+        user: SanitizedUserDataObj, oldPassword: String? = null, newPassword: String? = null
     ): Pair<Boolean, String?> {
         val passChecked = checkPassword(oldPassword)
         if (newPassword != null && !passChecked.first) return passChecked
@@ -215,11 +222,23 @@ class UserManager(context: Context, private val dm: DataManager, private val sm:
         }
     }
 
+    // Function to toggle the preference
+    suspend fun toggleMinimalistMode() {
+        this.context.dataStore.edit { preferences ->
+            val currentMode = preferences[MINIMALIST_MODE_KEY] ?: false
+            Log.d(TAG, "SET USER MIN MODE TO ${!currentMode}")
+            preferences[MINIMALIST_MODE_KEY] = !currentMode
+//            this.isMinimalistMode = !currentMode
+        }
+    }
+
     fun getURL(): String? {
         return this.sm.getBaseURL()
     }
 
     suspend fun deleteWorkout(workout: ParsedActiveExercise): Pair<Boolean, Any?> {
-        return this.sm.sendData(mapOf("id" to workout.id), path = "workouts/workout", method = "DELETE")
+        return this.sm.sendData(
+            mapOf("id" to workout.id), path = "workouts/workout", method = "DELETE"
+        )
     }
 }

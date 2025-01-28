@@ -86,7 +86,8 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
         val requestBody = jsonData.toRequestBody("application/json".toMediaTypeOrNull())
         val urlToUse = if (!path.isNullOrEmpty()) "$baseURLToUse/$path" else baseURLToUse
 
-        if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
+        if (path == "isindebugmode") Log.d(TAG, "debug pinging $baseURLToUse")
+        else if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
             TAG,
             "Debug: Sending a $method request to $urlToUse with data $jsonData"
         )
@@ -116,7 +117,7 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
                         if (response.isSuccessful) {
                             val responseBody = response.body?.string()
 
-                            if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
+                            if (BuildConfig.SENSITIVE_LOGGING_ENABLED && path != "isindebugmode") Log.d(
                                 TAG,
                                 "Debug: Data synced successfully: $responseBody"
                             )
