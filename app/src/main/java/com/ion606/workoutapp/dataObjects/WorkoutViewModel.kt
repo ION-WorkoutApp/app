@@ -30,6 +30,23 @@ class WorkoutViewModel(private val dao: SuperSetDao) : ViewModel() {
     val currentSwapTargetId: State<String?> = _currentSwapTargetId
     private var swapTargetJob: Job? = null
 
+    private val _currentExercise = mutableStateOf<ActiveExercise?>(null)
+    val currentExercise: State<ActiveExercise?> = _currentExercise
+
+    private val _currentSuperset = mutableStateOf<SuperSet?>(null)
+    val currentSuperset: State<SuperSet?> = _currentSuperset
+
+    fun setCurrentExercise(exercise: ActiveExercise, superset: SuperSet) {
+        _currentExercise.value = exercise
+        _currentSuperset.value = superset
+    }
+
+    // Function to clear the current exercise and superset
+    fun clearCurrentExercise() {
+        _currentExercise.value = null
+        _currentSuperset.value = null
+    }
+
     fun setCurrentSwapTargetId(exerciseId: String?) {
         // Cancel any existing job
         swapTargetJob?.cancel()
@@ -69,7 +86,10 @@ class WorkoutViewModel(private val dao: SuperSetDao) : ViewModel() {
 
     fun removeExerciseFromSuperset(superSet: SuperSet, exercise: ActiveExercise) {
         viewModelScope.launch(Dispatchers.IO) {
-            superSet.removeExercise(exercise)
+            if (!superSet.removeExercise(exercise)) Log.d(
+                TAG,
+                "Failed to remove exercise ${exercise.id} from superset ${superSet.id}"
+            )
             dao.update(superSet)
 
             if (superSet.exercises.isEmpty()) {

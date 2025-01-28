@@ -45,7 +45,7 @@ data class ParsedSetData(
 )
 
 data class SavedWorkoutResponse(
-    val success: Boolean, val workouts: List<Workout>
+    val success: Boolean, val workouts: List<Workout>, val message: String?
 )
 
 data class Workout(

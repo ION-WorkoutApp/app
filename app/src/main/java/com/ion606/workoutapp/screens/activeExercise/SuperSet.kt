@@ -54,7 +54,6 @@ data class SuperSet(
     }
 
     fun getCurrentExercise(): ActiveExercise? {
-        Log.d("EXERCISE", "currentExerciseIndex: $currentExerciseIndex")
         return exercises.getOrNull(currentExerciseIndex)
     }
 
@@ -79,6 +78,18 @@ data class SuperSet(
 
     fun isOnLastExercise(): Boolean {
         return (this.isSingleExercise || (this.currentExerciseIndex == this.exercises.size - 1))
+    }
+
+    fun isOnFirstExercise(): Boolean {
+        return (this.isSingleExercise || (this.currentExerciseIndex == 0))
+    }
+
+    fun goToNextExercise(): ActiveExercise? {
+        if (this.isSingleExercise) return this.getCurrentExercise()
+        else if (this.currentExerciseIndex > this.exercises.size - 2) this.currentExerciseIndex = 0
+        else this.currentExerciseIndex++
+        this.getCurrentExercise()?.let { this.setCurrentExercise(it) }
+        return this.getCurrentExercise()
     }
 }
 

@@ -57,6 +57,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 
 private const val TAG = "ExercisePopup"
@@ -82,9 +83,9 @@ fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<SuperSet>
                     exercise = it,
                     sets = setsCount,
                     setsDone = 0,
-                    reps = repList.toMutableList(),
-                    times = timesList.toMutableList(),
-                    weight = weightsList.toMutableList()
+                    reps = repList.map { it.copy(id = UUID.randomUUID().toString()) }.toMutableList(),
+                    times = timesList.map { it.copy(id = UUID.randomUUID().toString()) }.toMutableList(),
+                    weight = weightsList.map { it.copy(id = UUID.randomUUID().toString()) }.toMutableList()
                 )
             )
         })

@@ -2,10 +2,18 @@ package com.ion606.workoutapp.screens.activeExercise
 
 //noinspection UsingMaterialAndMaterial3Libraries
 import SelectWorkoutPopup
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -109,6 +117,7 @@ class ExerciseScreen {
     companion object {
 
         @Composable
+        @SuppressLint("UnusedContentLambdaTargetStateParameter")
         fun CreateScreen(
             userManager: UserManager,
             syncManager: SyncManager,
@@ -121,9 +130,10 @@ class ExerciseScreen {
             )
         ) {
             val supersets = workoutViewModel.supersets
+            val currentExercise = workoutViewModel.currentExercise
+            val currentSuperset = workoutViewModel.currentSuperset
+
             val dispSelPop = remember { mutableStateOf(false) }
-            val currentExercise = remember { mutableStateOf<ActiveExercise?>(null) }
-            val currentSuperset = remember { mutableStateOf<SuperSet?>(null) }
             val showExitConfirmation = remember { mutableStateOf(false) }
             val currentCat = remember { mutableStateOf("") } // Tracks selected category
             val coroutineScope = rememberCoroutineScope()
@@ -145,7 +155,7 @@ class ExerciseScreen {
             if (showExitConfirmation.value) {
                 if (currentCat.value.isNotEmpty()) currentCat.value = ""
                 else if (dispSelPop.value) dispSelPop.value = false
-                else if (currentExercise.value != null) currentExercise.value = null
+                else if (currentExercise.value != null) workoutViewModel.clearCurrentExercise()
                 else Alerts.ShowAlert(onClick = {
                     if (it) endWorkout.intValue = 2
 
@@ -340,9 +350,10 @@ class ExerciseScreen {
                                         viewModel = workoutViewModel,
                                         superSetBounds = superSetBoundsList,
                                         onExerciseClick = { clickedExercise ->
-                                            Log.d(TAG, "Clicked exercise: ${clickedExercise.exercise.title}")
-                                            currentExercise.value = clickedExercise
-                                            currentSuperset.value = superSet
+                                            workoutViewModel.setCurrentExercise(
+                                                clickedExercise,
+                                                superSet
+                                            )
                                         }
                                     )
                                 }
@@ -398,9 +409,15 @@ class ExerciseScreen {
                                     )
 
                                     if (r.first) {
-                                        savedWorkouts.value = Gson().fromJson(
+                                        val res = Gson().fromJson(
                                             r.second.toString(), SavedWorkoutResponse::class.java
-                                        ).workouts.toList()
+                                        )
+                                        if (!res.success) {
+                                            if (!res.message.isNullOrEmpty()) Log.d(
+                                                "ERROR!",
+                                                res.message
+                                            )
+                                        } else savedWorkouts.value = res.workouts.toList()
                                     } else Log.d("ERROR!", r.second.toString())
                                     loadWorkout = false
                                 }
@@ -423,23 +440,45 @@ class ExerciseScreen {
             }
 
             if (currentExercise.value != null && currentSuperset.value != null) {
-                DisplayActiveExercise.DisplayActiveExerciseScreen(
-                    activeExercise = currentExercise,
-                    context = context,
-                    nhelper = nhelper,
-                    currentSuperset = currentSuperset,
-                    triggerExerciseSave = { exercise: ActiveExercise, superset: SuperSet ->
-                        Log.d(
-                            TAG, "Saving exercise (in ExerciseScreen): ${exercise.exercise.title}"
+                AnimatedContent(
+                    targetState = currentExercise.value,
+                    transitionSpec = {
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = tween(durationMillis = 300)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = tween(durationMillis = 300)
                         )
-
-                        superset.updateExercise(exercise)
-                        coroutineScope.launch {
-                            dao.update(superset)
-                            Log.d(TAG, "Saved exercise: ${exercise.exercise.title}")
-                        }
                     }
-                )
+                ) { _ ->
+                    DisplayActiveExercise.DisplayActiveExerciseScreen(
+                        activeExercise = currentExercise,
+                        context = context,
+                        nhelper = nhelper,
+                        currentSuperset = currentSuperset,
+                        triggerExerciseSave = { exercise: ActiveExercise, superset: SuperSet, exitScreen: Boolean ->
+                            Log.d(
+                                TAG,
+                                "Saving exercise (in ExerciseScreen): ${exercise.exercise.title}. Is an exit? $exitScreen"
+                            )
+
+                            superset.updateExercise(exercise)
+
+                            coroutineScope.launch {
+                                dao.update(superset)
+                                Log.d(TAG, "updated DAO for exercise: ${exercise.exercise.title}")
+                                if (exitScreen) {
+                                    workoutViewModel.clearCurrentExercise()
+                                }
+                            }
+                        },
+                        advanceToNextExercise = { nextExercise: ActiveExercise?, superset: SuperSet ->
+                            if (superset.isOnFirstExercise() || nextExercise == null) workoutViewModel.clearCurrentExercise()
+                            else workoutViewModel.setCurrentExercise(nextExercise, superset)
+                        }
+                    )
+                }
             }
         }
     }
