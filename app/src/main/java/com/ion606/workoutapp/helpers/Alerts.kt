@@ -138,6 +138,23 @@ class Alerts {
         }
 
         @Composable
+        fun CreateDropdownDialog(
+            title: String,
+            context: Context,
+            options: List<String>,
+            cb: (uText: String?) -> Unit
+        ) {
+            val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+            builder.setTitle(title)
+
+            builder.setItems(options.toTypedArray()) { _, which ->
+                cb(options[which])
+            }
+
+            builder.show()
+        }
+
+        @Composable
         fun CreateAlertDialog(
             title: String = "Title",
             context: Context,

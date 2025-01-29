@@ -36,7 +36,9 @@ import kotlinx.coroutines.runBlocking
 private const val TAG = "UserManager"
 val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
-class UserManager(private val context: Context, private val dm: DataManager, private val sm: SyncManager) {
+class UserManager(
+    private val context: Context, private val dm: DataManager, private val sm: SyncManager
+) {
     private val sharedPreferences: SharedPreferences
     private var userData: UserDataObj? = null
     private val MINIMALIST_MODE_KEY = booleanPreferencesKey("minimalist_mode")
@@ -240,5 +242,24 @@ class UserManager(private val context: Context, private val dm: DataManager, pri
         return this.sm.sendData(
             mapOf("id" to workout.id), path = "workouts/workout", method = "DELETE"
         )
+    }
+
+    suspend fun requestData(format: String? = null): Pair<Boolean, Any?> {
+        if (format.isNullOrEmpty()) return Pair(false, "Format is empty")
+        else if (!listOf("json", "csv", "ics").contains(format)) return Pair(
+            false, "Invalid format"
+        )
+        val r = this.sm.sendData(emptyMap(), path = "udata/canrequest", method = "GET")
+        if (!r.first) return r;
+
+        return this.sm.sendData(
+            mapOf(
+                "format" to format
+            ), path = "udata/export", method = "POST"
+        )
+    }
+
+    suspend fun checkDataStatus(): Pair<Boolean, Any?> {
+        return this.sm.sendData(emptyMap(), path = "udata/status", method = "GET")
     }
 }

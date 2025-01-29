@@ -15,7 +15,8 @@ data class UserDataObj(
     val weight: Int = 0,
     val fitnessGoal: String = "",
     val preferredWorkoutType: String = "",
-    val comfortLevel: String = ""
+    val comfortLevel: String = "",
+    val lastRequestedData: String? = null
 ) {
     // Copy constructor
     constructor(other: UserDataObj) : this(
@@ -29,7 +30,8 @@ data class UserDataObj(
         other.weight,
         other.fitnessGoal,
         other.preferredWorkoutType,
-        other.comfortLevel
+        other.comfortLevel,
+        other.lastRequestedData
     )
 
     fun toMap(): Map<String, Any> {
@@ -44,7 +46,8 @@ data class UserDataObj(
             "weight" to weight,
             "fitnessGoal" to fitnessGoal,
             "preferredWorkoutType" to preferredWorkoutType,
-            "comfortLevel" to comfortLevel
+            "comfortLevel" to comfortLevel,
+            "lastRequestedData" to (lastRequestedData ?: "")
         )
     }
 
@@ -77,7 +80,8 @@ data class SanitizedUserDataObj(
     val weight: Int = 0,
     val fitnessGoal: String = "",
     val preferredWorkoutType: String = "",
-    val comfortLevel: String = ""
+    val comfortLevel: String = "",
+    val lastRequestedData: String? = null
 ) {
     // "Copy" constructor
     constructor(other: UserDataObj) : this(
@@ -90,7 +94,8 @@ data class SanitizedUserDataObj(
         other.weight,
         other.fitnessGoal,
         other.preferredWorkoutType,
-        other.comfortLevel
+        other.comfortLevel,
+        other.lastRequestedData
     )
 
     fun toUserDataObj(password: String): UserDataObj {
@@ -105,7 +110,8 @@ data class SanitizedUserDataObj(
             weight,
             fitnessGoal,
             preferredWorkoutType,
-            comfortLevel
+            comfortLevel,
+            lastRequestedData
         )
     }
 }

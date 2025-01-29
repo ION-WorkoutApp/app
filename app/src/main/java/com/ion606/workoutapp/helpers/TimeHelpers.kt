@@ -1,6 +1,7 @@
 package com.ion606.workoutapp.helpers
 
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ion606.workoutapp.managers.SyncManager
 import kotlinx.coroutines.delay
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 
 @Composable
@@ -162,3 +169,44 @@ fun CheckIfInDebugMode(sm: SyncManager, isInDebugMode: (Boolean) -> Unit) {
     }
 }
 
+fun transformTimestampToDateString(timestamp: String?): String? {
+    try {
+        if (timestamp == null) return null
+
+        // define the input format (ISO 8601 with milliseconds and 'Z' for UTC)
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
+        inputFormat.timeZone = TimeZone.getTimeZone("UTC") // use UTC
+
+        val date = inputFormat.parse(timestamp) ?: return null
+
+        // get the user's default date and time formats
+        val dateFormat = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault())
+        val timeFormat = SimpleDateFormat.getTimeInstance(SimpleDateFormat.MEDIUM, Locale.getDefault())
+
+        // format date and time according to user's locale
+        return "${dateFormat.format(date)} at ${timeFormat.format(date)}"
+    } catch (e: Exception) {
+        Log.e("TimeHelpers", "Failed to transform timestamp to date string", e)
+        return null
+    }
+}
+
+fun isWithinPastMonth(dateString: String): Boolean {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+    dateFormat.timeZone = TimeZone.getTimeZone("UTC") // use UTC
+
+    return try {
+        val date = dateFormat.parse(dateString) ?: return false // Convert string to Date
+
+        val now = Date()
+        val calendar = Calendar.getInstance().apply {
+            time = now
+            add(Calendar.MONTH, -1) // Move back one month in the jankiest way possible
+        }
+
+        val oneMonthAgo = calendar.time
+        date in oneMonthAgo..now // Check if the date falls within the range
+    } catch (e: Exception) {
+        false // Return false if the date format is invalid
+    }
+}

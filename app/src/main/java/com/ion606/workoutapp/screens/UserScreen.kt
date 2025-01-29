@@ -2,6 +2,7 @@ package com.ion606.workoutapp.screens
 
 import android.content.Context
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.password
 import androidx.compose.ui.semantics.semantics
@@ -45,10 +47,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.ion606.workoutapp.elements.Tooltip
 import com.ion606.workoutapp.helpers.Alerts
+import com.ion606.workoutapp.helpers.isWithinPastMonth
 import com.ion606.workoutapp.helpers.openWebPage
+import com.ion606.workoutapp.helpers.transformTimestampToDateString
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 
 class UserScreen {
@@ -74,12 +79,52 @@ class UserScreen {
             var oldPassword by remember { mutableStateOf("") }
             var newPassword by remember { mutableStateOf("") }
             val triggerDelete = remember { mutableStateOf(false) }
+            var triggerDataRequest by remember { mutableStateOf(false) }
             val alertmsg = remember { mutableStateOf(Pair<String, String?>("", "")) }
             var logout by remember { mutableStateOf(false) }
+            var checkDataStatus by remember { mutableStateOf<String?>(null) }
+            var canRequestData by remember {
+                mutableStateOf(
+                    user.lastRequestedData.isNullOrBlank() || !isWithinPastMonth(
+                        user.lastRequestedData
+                    )
+                )
+            }
+
             val isInMinMode by userManager.isMinimalistModeFlow.collectAsState(initial = false)
 
-
             if (triggerDelete.value) userManager.DeleteAccount(navController);
+            else if (triggerDataRequest) {
+                Alerts.CreateDropdownDialog(
+                    title = "Data Format",
+                    context = context,
+                    options = listOf("JSON", "CSV", "ICS"),
+                ) {
+                    if (it == null) triggerDataRequest = false
+                    else {
+                        coroutineScope.launch {
+                            canRequestData = false
+                            val r = userManager.requestData(it.lowercase(Locale.getDefault()));
+                            if (r.first) alertmsg.value = Pair("Data request sent successfully", "")
+                            else {
+                                alertmsg.value =
+                                    Pair("Failed to send data request", r.second?.toString() ?: "")
+                                canRequestData = true
+                            }
+                            triggerDataRequest = false
+                        }
+                    }
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                coroutineScope.launch {
+                    val r = userManager.checkDataStatus()
+                    if (r.second.toString().contains("No Request Made")) return@launch
+                    checkDataStatus = "Data request status: ${r.second}"
+                }
+            }
+
             if (logout) {
                 LaunchedEffect(Unit) {
                     coroutineScope.launch {
@@ -88,9 +133,11 @@ class UserScreen {
                 }
             }
 
-            if (alertmsg.value.first.isNotEmpty()) Alerts.ShowAlert({
-                alertmsg.value = Pair("", "")
-            }, alertmsg.value.first, alertmsg.value.second ?: "")
+            if (alertmsg.value.first.isNotEmpty()) Alerts.ShowAlert(
+                {
+                    alertmsg.value = Pair("", "")
+                }, alertmsg.value.first, alertmsg.value.second ?: "", oneButton = true
+            )
 
             val genderOptions = listOf("Male", "Female", "Non-Binary", "Other")
             val fitnessGoals = listOf(
@@ -122,7 +169,6 @@ class UserScreen {
                     onDismiss = { showTooltip = false })
 
             }
-
 
             Scaffold(bottomBar = {
                 WorkoutBottomBar(navController, 2)
@@ -292,6 +338,41 @@ class UserScreen {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Permissions")
+                    }
+
+                    val btnMod =
+                        if (canRequestData) Modifier.fillMaxWidth() else Modifier
+                            .fillMaxWidth()
+                            .alpha(0.5f)
+                            .focusable(false)
+                    Button(
+                        onClick = {
+                            if (canRequestData) triggerDataRequest = true
+                            else alertmsg.value = Pair(
+                                "Data already requested this month",
+                                "You last requested data on ${transformTimestampToDateString(user.lastRequestedData)}"
+                            )
+                        }, colors = ButtonDefaults.buttonColors(
+                            if (canRequestData) Color.Blue else Color.DarkGray, Color.White
+                        ), modifier = btnMod
+                    ) {
+                        Text(
+                            if (canRequestData) "Request Data" else if (user.lastRequestedData.isNullOrBlank() || !isWithinPastMonth(
+                                    user.lastRequestedData
+                                )
+                            ) "Data requested successfully" else "Data already requested this month"
+                        )
+                    }
+
+                    if (!checkDataStatus.isNullOrEmpty()) {
+                        Text(
+                            text = "Data Request Status: $checkDataStatus",
+                            fontSize = 14.sp,
+                            color = Color.LightGray,
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .align(Alignment.CenterHorizontally)
+                        )
                     }
 
                     Button(
