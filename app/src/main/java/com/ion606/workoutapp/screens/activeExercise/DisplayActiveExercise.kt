@@ -606,7 +606,7 @@ class DisplayActiveExercise {
                                                             horizontalAlignment = Alignment.CenterHorizontally
                                                         ) {
                                                             Text(
-                                                                text = "(Per Arm)",
+                                                                text = "(Per Side)",
                                                                 style = TextStyle(
                                                                     color = Color.Gray,
                                                                     fontSize = 14.sp,
