@@ -180,8 +180,8 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
     }
 
 
-    fun pingServer(): Boolean {
-        val u = this.baseURL;
+    fun pingServer(url: String? = null): Boolean {
+        val u = url ?: this.baseURL;
         if (u.isNullOrEmpty()) return false;
 
         // try pinging three times

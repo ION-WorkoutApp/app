@@ -18,9 +18,6 @@ import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 
-private const val DATABASEVERSION = 2
-
-
 @Entity
 data class Exercise(
     @PrimaryKey val exerciseId: String,
@@ -33,8 +30,10 @@ data class Exercise(
     val rating: Float,
     val ratingDescription: String,
     val videoPath: String,
-    val timeBased: Boolean
+    val timeBased: Boolean,
+    val perSide: Boolean
 )
+
 
 @Entity
 data class ExerciseSetDataObj(
@@ -56,6 +55,7 @@ class SetListConverter {
         return Gson().fromJson(data, object : TypeToken<MutableList<ExerciseSetDataObj>>() {}.type)
     }
 }
+
 
 class ActiveExerciseListConverter {
     @TypeConverter

@@ -187,7 +187,9 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                                 Icon(imageVector = image, contentDescription = description)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().semantics { this.password() }
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { this.password() }
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { step.value = 2 }, modifier = Modifier.fillMaxWidth()) {
@@ -268,23 +270,34 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                     Button(
                         onClick = {
                             step.value = 5
-                            tempstr.value = "Creating account..."
-
-                            val userData = mapOf(
-                                "name" to name.value,
-                                "email" to email.value,
-                                "password" to password.value,
-                                "age" to age.value,
-                                "gender" to gender.value,
-                                "height" to height.value,
-                                "weight" to weight.value,
-                                "fitnessGoal" to fitnessGoal.value,
-                                "preferredWorkoutType" to preferredWorkoutType.value,
-                                "comfortLevel" to comfortLevel.value,
-                            ).map { (k, v) -> k to v.trim() }.toMap()
+                            tempstr.value = "Pinging Server..."
 
                             val scope = CoroutineScope(Dispatchers.Default + Job())
                             scope.launch {
+                                val rPing = dataManager.pingServer(serverUrl.value)
+                                if (!rPing) {
+                                    scope.launch(Dispatchers.Main) {
+                                        tempstr.value = "Server is not reachable!"
+                                        tempsubheading.value = "Please check the server URL and try again."
+                                    }
+                                    return@launch
+                                }
+
+                                tempstr.value = "Creating account..."
+
+                                val userData = mapOf(
+                                    "name" to name.value,
+                                    "email" to email.value,
+                                    "password" to password.value,
+                                    "age" to age.value,
+                                    "gender" to gender.value,
+                                    "height" to height.value,
+                                    "weight" to weight.value,
+                                    "fitnessGoal" to fitnessGoal.value,
+                                    "preferredWorkoutType" to preferredWorkoutType.value,
+                                    "comfortLevel" to comfortLevel.value,
+                                ).map { (k, v) -> k to v.trim() }.toMap()
+
                                 val (success, v) = dataManager.createAccount(
                                     userData,
                                     serverUrl.value
@@ -293,13 +306,15 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                                     println("SIGNUP FAILED WITH ERROR $v!");
                                     if (v!!.contains("Client must be connected before running operations")) {
                                         scope.launch(Dispatchers.Main) {
-                                            tempstr.value = "SERVER ERROR! PLEASE CONTACT YOUR ADMIN OR CHECK SERVER LOGS!"
-                                            tempsubheading.value = "if you ARE an admin and have recently set up your server, try restarting the server and try again."
+                                            tempstr.value =
+                                                "SERVER ERROR! PLEASE CONTACT YOUR ADMIN OR CHECK SERVER LOGS!"
+                                            tempsubheading.value =
+                                                "if you ARE an admin and have recently set up your server, try restarting the server and try again."
                                         }
+                                    } else scope.launch(Dispatchers.Main) {
+                                        tempstr.value = "Signup failed!"
                                     }
-                                    else scope.launch(Dispatchers.Main) { tempstr.value = "Signup failed!" }
-                                }
-                                else scope.launch(Dispatchers.Main) { navController.navigate("home") }
+                                } else scope.launch(Dispatchers.Main) { navController.navigate("home") }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()

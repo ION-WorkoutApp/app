@@ -1,6 +1,7 @@
 package com.ion606.workoutapp.logic
 
 import android.os.CountDownTimer
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -93,6 +94,7 @@ fun StartTimer(
     var timer: CountDownTimer? by remember { mutableStateOf(null) } // Current timer instance
     var isPaused by remember { mutableStateOf(false) } // Tracks whether the timer is paused
 
+    Log.d("TIMER", "started timer $headerText with $remainingTime seconds")
     // Start the timer function
     fun startTimer(time: Int) {
         timer?.cancel() // Cancel any existing timer

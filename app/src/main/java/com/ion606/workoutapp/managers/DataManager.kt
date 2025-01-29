@@ -50,8 +50,8 @@ class DataManager(context: Context, private val sm: SyncManager) {
         this.authManager.clearAuthCache(true);
     }
 
-    fun pingServer(): Boolean {
-        return sm.pingServer()
+    fun pingServer(url: String? = null): Boolean {
+        return sm.pingServer(url)
     }
 
     suspend fun refreshToken(): Boolean {

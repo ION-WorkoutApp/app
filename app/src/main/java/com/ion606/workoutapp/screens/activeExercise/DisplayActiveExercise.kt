@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -91,6 +93,37 @@ fun stringToInt(s: String): Int {
 
 class DisplayActiveExercise {
     companion object {
+        @Composable
+        private fun TimeHelper(
+            nhelper: NotificationManager,
+            exercise: ActiveExercise,
+            timerSetr: MutableState<ExerciseSetDataObj?>,
+            currentTimerSet: Int,
+            cb: (Boolean) -> Unit
+        ) {
+            val timerTitle = if (exercise.exercise.perSide) {
+                if (currentTimerSet == 1) "Left Side Timer"
+                else "Right Side Timer"
+            } else "Set Timer"
+
+            StartTimer(
+                headerText = timerTitle, onFinishCB = {
+                    if (it) {
+                        nhelper.sendNotificationIfUnfocused(
+                            title = "Set Timer",
+                            message = "Timer completed for ${exercise.exercise.title}",
+                            intents = listOf(
+                                "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                                "exerciseId" to exercise.exercise.exerciseId
+                            )
+                        )
+                    }
+
+                    cb(it)
+                }, remainingTime = timerSetr.value!!.value
+            )
+        }
+
         @SuppressLint("MutableCollectionMutableState", "UnusedContentLambdaTargetStateParameter")
         @Composable
         fun DisplayActiveExerciseScreen(
@@ -123,7 +156,8 @@ class DisplayActiveExercise {
             LaunchedEffect(currentSuperset.value, exercise) {
                 val updatedSuperSet = currentSuperset.value
                 val newExercise = updatedSuperSet?.exercises?.find { it.id == exercise.id }
-                val list = if (exercise.exercise.timeBased) newExercise?.times else newExercise?.reps
+                val list =
+                    if (exercise.exercise.timeBased) newExercise?.times else newExercise?.reps
 
                 // Update the itemList with new data
                 if (list != null) {
@@ -144,6 +178,7 @@ class DisplayActiveExercise {
             val listState = rememberLazyListState()
             val coroutineScope = rememberCoroutineScope()
             val isTimerVisible = remember { mutableStateOf(false) }
+            val secondaryTimerSetr = remember { mutableStateOf<ExerciseSetDataObj?>(null) }
 
             if (showAlert.value) {
                 Alerts.ShowAlert(
@@ -159,38 +194,75 @@ class DisplayActiveExercise {
             LaunchedEffect(timerSetr.value) {
                 if (timerSetr.value != null) {
                     currentSetTime.intValue = timerSetr.value!!.value
-                    // run a loop that decrements currentSetTime every second
                     while (currentSetTime.intValue > 0) {
                         delay(1000)
                         currentSetTime.intValue -= 1
                     }
-                    // done
                     isTimerVisible.value = false
-                    timerSetr.value = null
+                    // Trigger the secondary timer instead of setting timerSetr to null
+                    if (exercise.exercise.perSide) {
+                        secondaryTimerSetr.value = timerSetr.value
+                    } else {
+                        timerSetr.value = null
+                    }
                 }
             }
 
-            if (timerSetr.value != null) {
-                Log.d(TAG, "Starting timer for set: ${timerSetr.value}")
+            LaunchedEffect(secondaryTimerSetr.value) {
+                if (secondaryTimerSetr.value != null) {
+                    currentSetTime.intValue = secondaryTimerSetr.value!!.value
+                    while (currentSetTime.intValue > 0) {
+                        delay(1000)
+                        currentSetTime.intValue -= 1
+                    }
+                    isTimerVisible.value = false
+                    secondaryTimerSetr.value = null
+                }
+            }
 
+
+            if (timerSetr.value != null || secondaryTimerSetr.value != null) {
                 isTimerVisible.value = true
-                StartTimer(
-                    onFinishCB = {
-                        isTimerVisible.value = it
-                        if (it) {
-                            nhelper.sendNotificationIfUnfocused(
-                                title = "Set Timer",
-                                message = "Timer completed for ${exercise.exercise.title}",
-                                intents = listOf(
-                                    "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
-                                    "exerciseId" to exercise.exercise.exerciseId
-                                )
-                            )
-                            timerSetr.value!!.isDone = true
-                            timerSetr.value = null
+
+                // Primary Timer
+                timerSetr.value?.let { primarySet ->
+                    TimeHelper(nhelper, exercise, timerSetr, 0) { finished ->
+                        if (finished && exercise.exercise.perSide) {
+                            secondaryTimerSetr.value = primarySet
                         }
-                    }, remainingTime = timerSetr.value!!.value
-                )
+                        if (!exercise.exercise.perSide) {
+                            timerSetr.value = null
+                            secondaryTimerSetr.value = null
+                            isTimerVisible.value = false
+                            logSet(
+                                superset,
+                                restTimer,
+                                exercise,
+                                triggerExerciseSave,
+                                advanceToNextExercise
+                            )
+                        }
+                    }
+                }
+
+                // Secondary Timer
+                secondaryTimerSetr.value?.let { _ ->
+                    TimeHelper(nhelper, exercise, secondaryTimerSetr, 1) { finished ->
+                        if (finished) {
+                            secondaryTimerSetr.value = null
+                            timerSetr.value = null
+                            isTimerVisible.value = false
+
+                            logSet(
+                                superset,
+                                restTimer,
+                                exercise,
+                                triggerExerciseSave,
+                                advanceToNextExercise
+                            )
+                        }
+                    }
+                }
             } else if (restTimer.intValue > 0) {
                 StartTimer(
                     onFinishCB = {
@@ -481,58 +553,117 @@ class DisplayActiveExercise {
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier
-                                            .padding(10.dp)
-                                            .height(75.dp)
+                                            .height(100.dp)
                                             .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
                                     ) {
                                         val t = convertSecondsToTimeString(setItem.value).split(":")
+
                                         // Time or Reps on the left
                                         if (exercise.exercise.timeBased) {
-                                            InputFieldCompact(value = t[0], // Minutes
-                                                label = "MM",
+                                            Column(
                                                 modifier = Modifier
-                                                    .weight(1f)
-                                                    .fillMaxHeight(),
-                                                enabled = !setItem.isDone,
-                                                onChange = {
-                                                    if (it.trim()
-                                                            .isEmpty()
-                                                    ) return@InputFieldCompact
-                                                    val newTime =
-                                                        (stringToInt(it) * 60) + stringToInt(t[1])
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 8.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                // Timer input fields inside a row
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(80.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.Center
+                                                ) {
+                                                    InputFieldCompact(
+                                                        value = t[0], // Minutes
+                                                        label = "MM",
+                                                        modifier = Modifier
+                                                            .weight(1f) // Both fields take up equal width
+                                                            .fillMaxHeight(),
+                                                        enabled = !setItem.isDone,
+                                                        onChange = {
+                                                            if (it.trim()
+                                                                    .isEmpty()
+                                                            ) return@InputFieldCompact
+                                                            val newTime =
+                                                                (stringToInt(it) * 60) + stringToInt(
+                                                                    t[1]
+                                                                )
+                                                            itemList[i] =
+                                                                setItem.copy(value = newTime)
+                                                            exercise.times = itemList
+                                                            triggerExerciseSave(
+                                                                exercise,
+                                                                superset,
+                                                                false
+                                                            )
+                                                        }
+                                                    )
 
-                                                    itemList[i] = setItem.copy(value = newTime)
+                                                    if (exercise.exercise.perSide) {
+                                                        Column(
+                                                            horizontalAlignment = Alignment.CenterHorizontally
+                                                        ) {
+                                                            Text(
+                                                                text = "(Per Arm)",
+                                                                style = TextStyle(
+                                                                    color = Color.Gray,
+                                                                    fontSize = 14.sp,
+                                                                    fontStyle = FontStyle.Italic
+                                                                ),
+                                                                modifier = Modifier.padding(top = 0.dp, bottom = 0.dp)
+                                                            )
 
-                                                    exercise.times = itemList
-                                                    triggerExerciseSave(exercise, superset, false)
-                                                })
+                                                            Spacer(modifier = Modifier.height(22.dp))
 
-                                            Text(
-                                                text = ":", modifier = Modifier.padding(
-                                                    top = 16.dp, start = 8.dp, end = 8.dp
-                                                ), style = TextStyle(
-                                                    color = if (setItem.isDone) Color.Gray else Color.White, // Gray for disabled
-                                                    fontSize = 20.sp
-                                                )
-                                            )
+                                                            Text(
+                                                                text = ":",
+                                                                modifier = Modifier.padding(
+                                                                    horizontal = 8.dp
+                                                                ),
+                                                                style = TextStyle(
+                                                                    color = if (setItem.isDone) Color.Gray else Color.White,
+                                                                    fontSize = 20.sp
+                                                                )
+                                                            )
+                                                        }
+                                                    } else {
+                                                        Text(
+                                                            text = ":",
+                                                            modifier = Modifier.padding(horizontal = 8.dp),
+                                                            style = TextStyle(
+                                                                color = if (setItem.isDone) Color.Gray else Color.White,
+                                                                fontSize = 20.sp
+                                                            )
+                                                        )
+                                                    }
 
-                                            InputFieldCompact(value = t[1], // Seconds
-                                                label = "SS",
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .fillMaxHeight(),
-                                                enabled = !setItem.isDone,
-                                                onChange = {
-                                                    if (it.trim()
-                                                            .isEmpty()
-                                                    ) return@InputFieldCompact
-                                                    val newTime =
-                                                        stringToInt(it) + (stringToInt(t[0]) * 60)
-                                                    itemList[i] = setItem.copy(value = newTime)
-
-                                                    exercise.times = itemList
-                                                    triggerExerciseSave(exercise, superset, false)
-                                                })
+                                                    InputFieldCompact(
+                                                        value = t[1], // Seconds
+                                                        label = "SS",
+                                                        modifier = Modifier
+                                                            .weight(1f) // Ensures both inputs are of equal size
+                                                            .fillMaxHeight(),
+                                                        enabled = !setItem.isDone,
+                                                        onChange = {
+                                                            if (it.trim()
+                                                                    .isEmpty()
+                                                            ) return@InputFieldCompact
+                                                            val newTime =
+                                                                stringToInt(it) + (stringToInt(t[0]) * 60)
+                                                            itemList[i] =
+                                                                setItem.copy(value = newTime)
+                                                            exercise.times = itemList
+                                                            triggerExerciseSave(
+                                                                exercise,
+                                                                superset,
+                                                                false
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            }
                                         } else {
                                             InputField(value = setItem.value.toString(),
                                                 label = "Reps",
@@ -604,18 +735,13 @@ class DisplayActiveExercise {
                         if (!exercise.isDone) {
                             Button(
                                 onClick = {
-                                    if (superset.isOnLastExercise() && superset.getCurrentExercise()?.restTime!! > 0) {
-                                        restTimer.intValue =
-                                            superset.getCurrentExercise()?.restTime ?: 0
-                                    } else {
-                                        goToNextExercise(
-                                            superset, restTimer, exercise, { ae, superset ->
-                                                triggerExerciseSave(
-                                                    ae, superset, false
-                                                )
-                                            }, advanceToNextExercise
-                                        )
-                                    }
+                                    logSet(
+                                        superset,
+                                        restTimer,
+                                        exercise,
+                                        triggerExerciseSave,
+                                        advanceToNextExercise
+                                    )
                                 }, modifier = Modifier.align(Alignment.Bottom)
                             ) {
                                 Text(
@@ -626,6 +752,28 @@ class DisplayActiveExercise {
                     }
                 } else Log.d(
                     TAG, "it shouldn't ever get here since advanceToNextExercise handles completion"
+                )
+            }
+        }
+
+
+        private fun logSet(
+            currentSuperset: SuperSet,
+            restTimer: MutableIntState,
+            exercise: ActiveExercise,
+            triggerExerciseSave: (ActiveExercise, SuperSet, Boolean) -> Unit,
+            advanceToNextExercise: (ActiveExercise?, SuperSet) -> Unit
+        ) {
+            if (currentSuperset.isOnLastExercise() && currentSuperset.getCurrentExercise()?.restTime!! > 0) {
+                restTimer.intValue =
+                    currentSuperset.getCurrentExercise()?.restTime ?: 0
+            } else {
+                goToNextExercise(
+                    currentSuperset, restTimer, exercise, { ae, superset ->
+                        triggerExerciseSave(
+                            ae, superset, false
+                        )
+                    }, advanceToNextExercise
                 )
             }
         }
@@ -661,8 +809,7 @@ class DisplayActiveExercise {
                 }!!
 
                 if (!exercise.reps!!.any { !it.isDone }) exercise.isDone = true
-            }
-            else {
+            } else {
                 // i == -1 which means we somehow finished the superset without marking it as done?
                 exercise.isDone = true
             }
