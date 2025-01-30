@@ -107,7 +107,7 @@ fun SelectWorkoutPopup(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${workout.exercises.size} exercises",
+                                text = "${workout.supersets.size} supersets",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -128,8 +128,6 @@ fun SelectWorkoutPopup(
                             DropdownMenu(expanded = expandedDropdownId == workout.workoutName,
                                 onDismissRequest = { expandedDropdownId = null }) {
                                 DropdownMenuItem(onClick = {
-                                    Log.d("workoutmenu", "Info action triggered")
-
                                     selectedWorkout = workout
                                     expandedDropdownId = null
                                 }, text = { Text("Info") })
@@ -143,7 +141,8 @@ fun SelectWorkoutPopup(
                                     if (renameResult.value!!.first) {
                                         Alerts.ShowAlert(
                                             {
-                                                workoutName.value = renameResult.value?.second.toString()
+                                                workoutName.value =
+                                                    renameResult.value?.second.toString()
                                                 expandedDropdownId = null
                                                 renameResult.value = null
                                             },
@@ -181,19 +180,20 @@ fun SelectWorkoutPopup(
                                                 "workoutId" to workout.id,
                                                 "newName" to newName.value
                                             ), path = "savedworkouts", method = "PUT"
-                                        ) { result -> run {
-                                            if (result.first) renameResult.value = Pair(true, newName.value)
-                                            else renameResult.value = Pair(false, result.second)
+                                        ) { result ->
+                                            run {
+                                                if (result.first) renameResult.value =
+                                                    Pair(true, newName.value)
+                                                else renameResult.value = Pair(false, result.second)
 
-                                            newName.value = ""
-                                        } }
+                                                newName.value = ""
+                                            }
+                                        }
                                     }
                                 }
 
-                                DropdownMenuItem(onClick = {
-                                    Log.d("workoutmenu", "Rename action triggered")
-                                    triggerRename.value = true
-                                }, text = { Text("Rename") })
+                                DropdownMenuItem(onClick = { triggerRename.value = true },
+                                    text = { Text("Rename") })
 
 
                                 val deleteResult =
@@ -272,19 +272,23 @@ fun WorkoutDetailsDialog(
                 color = Color.Gray
             )
             Spacer(modifier = Modifier.padding(8.dp))
-            workout.exercises.forEachIndexed { index, exercise ->
+            workout.supersets.forEachIndexed { index, superset ->
                 Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                    Text(
-                        text = "${index + 1}. ${exercise.title}",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = exercise.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
+                    superset.exercises.forEachIndexed { index, exercise ->
+                        Column(modifier = Modifier.padding(bottom = 4.dp)) {
+                            Text(
+                                text = "${index + 1}. ${exercise.exercise.title}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = exercise.exercise.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
                 }
             }
         }

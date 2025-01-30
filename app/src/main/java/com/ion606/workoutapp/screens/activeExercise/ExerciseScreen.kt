@@ -51,7 +51,6 @@ import androidx.navigation.NavHostController
 import com.google.gson.Gson
 import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.ActiveExerciseDao
-import com.ion606.workoutapp.dataObjects.Exercise
 import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
 import com.ion606.workoutapp.dataObjects.Workout
 import com.ion606.workoutapp.dataObjects.WorkoutViewModel
@@ -137,7 +136,7 @@ class ExerciseScreen {
             val coroutineScope = rememberCoroutineScope()
             val expandDropdown = remember { mutableStateOf(false) }
             val endWorkout = remember { mutableIntStateOf(0) }
-            val savedWorkout = remember { mutableListOf<Map<String, Any?>?>() }
+            var saveWorkout by remember { mutableStateOf(false) }
             val workoutTime = remember { WorkoutTimerObject() }
 
             // Handle back navigation
@@ -174,7 +173,7 @@ class ExerciseScreen {
                 )
             }
 
-            if (savedWorkout.isNotEmpty()) {
+            if (saveWorkout) {
                 var workoutName by remember { mutableStateOf<String?>(null) }
                 var error by remember { mutableStateOf("") }
 
@@ -199,16 +198,17 @@ class ExerciseScreen {
                             val r = syncManager.sendData(
                                 mapOf(
                                     "workout" to mapOf(
-                                        "exercises" to savedWorkout, "totalTime" to 0
+                                        "supersets" to dao.getAll(),
+                                        "totalTime" to 0
                                     ), "workoutname" to workoutName.toString()
                                 ), path = "workouts/savedworkouts"
                             )
 
-                            if (r.first) {
-                                error = "Successfully saved workout"
-                                savedWorkout.clear()
-                            } else error = r.second.toString()
+                            error = if (r.first) {
+                                "Successfully saved workout"
+                            } else r.second.toString()
 
+                            saveWorkout = false
                             Log.d("SAVE RESULT", r.toString())
                         }
                     }
@@ -225,9 +225,18 @@ class ExerciseScreen {
                             return@launch
                         }
 
+                        val exercises = dao.getAll()
                         val totalTime = workoutTime.time
+
+                        if (!exercises.any { it.isDone }) {
+                            Log.d(TAG, "No exercises completed")
+                            navController.navigate("home")
+                            endWorkout.intValue = 0
+                            return@launch
+                        }
+
                         val toSend = mapOf(
-                            "supersets" to dao.getAll(),
+                            "supersets" to exercises,
                             "totalTime" to totalTime,
                             "workoutTime" to workoutTime.time
                         )
@@ -313,9 +322,9 @@ class ExerciseScreen {
                                     modifier = Modifier.wrapContentSize(Alignment.TopEnd)
                                 ) {
                                     DropdownMenuItem(onClick = {
-                                        Log.d("TODO", "Save workout")
+                                        saveWorkout = true
                                         expandDropdown.value = false
-                                    }, text = { Text("Save Workout", color = Color.White) })
+                                    }, text = { Text("Add to Saved Workouts", color = Color.White) })
 
                                     DropdownMenuItem(onClick = {
                                         endWorkout.intValue = 1
@@ -355,7 +364,7 @@ class ExerciseScreen {
                     }
                 }
             } else if (supersets.isEmpty() && !dispSelPop.value) {
-                val exercisesToAdd = remember { mutableStateOf<List<Exercise>?>(null) }
+                val supersetsToAdd = remember { mutableStateOf<List<SuperSet>?>(null) }
 
                 // reset the dao ("clear the cache" ish)
                 LaunchedEffect(Unit) {
@@ -368,18 +377,12 @@ class ExerciseScreen {
                     }
                 }
 
-                LaunchedEffect(exercisesToAdd.value) {
-                    val newExercises = exercisesToAdd.value ?: return@LaunchedEffect
-                    val toAdd = exercisesToActiveExercises(newExercises)
+                LaunchedEffect(supersetsToAdd.value) {
+                    val newExercises = supersetsToAdd.value ?: return@LaunchedEffect
 
-                    dao.insertAll(toAdd)
-                    workoutViewModel.initializeSupersets(toAdd) // Update the ViewModel's supersets
-
-                    Log.d(
-                        TAG,
-                        "Added exercises: ${toAdd.map { it.exercises.map { e -> e.exercise.title } }}"
-                    )
-                    exercisesToAdd.value = null
+                    dao.insertAll(newExercises)
+                    workoutViewModel.initializeSupersets(newExercises)
+                    supersetsToAdd.value = null
                 }
 
                 Box(
@@ -394,7 +397,7 @@ class ExerciseScreen {
 
                         if (savedWorkouts.value != null) {
                             SelectWorkoutPopup(savedWorkouts.value!!, {
-                                exercisesToAdd.value = it.exercises.toList()
+                                supersetsToAdd.value = it.supersets.toList()
                             }, { savedWorkouts.value = null }, syncManager, context
                             )
                         }
