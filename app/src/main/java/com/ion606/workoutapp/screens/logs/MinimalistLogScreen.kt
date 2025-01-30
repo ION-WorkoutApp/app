@@ -1,6 +1,5 @@
 package com.ion606.workoutapp.screens.logs
 
-import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,22 +15,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.ParsedExercise
 import com.ion606.workoutapp.dataObjects.Workout
 import com.ion606.workoutapp.dataObjects.convertActiveExerciseToParsed
-import com.ion606.workoutapp.managers.SyncManager
-import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.activeExercise.SuperSet
 
 
 @Composable
 fun MinimalistWorkoutCard(
-    workout: Workout,
-    userManager: UserManager,
-    syncManager: SyncManager,
-    navController: NavHostController,
-    context: Context
+    workout: Workout
 ) {
     Card(
         shape = RoundedCornerShape(8.dp),
@@ -79,28 +72,18 @@ fun MinimalistExerciseDetails(exercise: ParsedExercise) {
             color = Color(0xFFB0B0B0)
         )
 
-        // Reps or time-based sets
-        if (exercise.timeBased) {
-            Text(
-                text = "Time-Based: ${exercise.times?.filter { it.isDone }?.size}/${exercise.times?.size} sets",
-                fontSize = 12.sp,
-                color = Color(0xFFE0E0E0)
-            )
-        } else {
-            Text(
-                text = "Reps-Based: ${exercise.reps?.filter { it.isDone }?.size}/${exercise.reps?.size} sets",
-                fontSize = 12.sp,
-                color = Color(0xFFE0E0E0)
-            )
-        }
+        Text(
+            text = "${if (ExerciseMeasureType.useTime(exercise.measure)) "Time-Based" else "Reps-Based"}: ${exercise.inset?.filter { it.isDone }?.size}/${exercise.inset?.size} sets",
+            fontSize = 12.sp,
+            color = Color(0xFFE0E0E0)
+        )
     }
 }
 
 @Composable
 fun MinimalistSupersetDetails(superset: SuperSet) {
     Column(
-        modifier = Modifier
-            .padding(vertical = 4.dp)
+        modifier = Modifier.padding(vertical = 4.dp)
     ) {
         // Optional: You can choose to remove the superset label if desired
         Text(

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.ParsedExercise
 import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
 import com.ion606.workoutapp.dataObjects.Workout
@@ -185,9 +186,9 @@ fun DarkThemeWorkoutResponse(
                     ) {
                         items(response!!.workouts) { workout ->
                             if (isMinimalist) {
-                                MinimalistWorkoutCard(workout, userManager, sm, navController, context)
+                                MinimalistWorkoutCard(workout)
                             } else {
-                                WorkoutCard(workout, userManager, sm, navController, context)
+                                WorkoutCard(workout, userManager)
                             }
 
                         }
@@ -262,10 +263,7 @@ fun DarkThemeWorkoutResponse(
 @Composable
 fun WorkoutCard(
     workout: Workout,
-    userManager: UserManager,
-    syncManager: SyncManager,
-    navController: NavHostController,
-    context: Context
+    userManager: UserManager
 ) {
     val isMinimalist by userManager.isMinimalistModeFlow.collectAsState(initial = false)
 
@@ -403,16 +401,16 @@ fun ExerciseDetails(exercise: ParsedExercise) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Reps or time-based sets with emojis
-        if (exercise.timeBased) {
+        if (ExerciseMeasureType.useTime(exercise.measure)) {
             Text(
-                text = "⏱️ Time-Based: ${exercise.times?.filter { it.isDone }?.size}/${exercise.times?.size} sets completed",
+                text = "⏱️ Time-Based: ${exercise.inset?.filter { it.isDone }?.size}/${exercise.inset?.size} sets completed",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFE0E0E0)
             )
-            exercise.times?.forEachIndexed { index, time ->
+            exercise.inset?.forEachIndexed { index, time ->
                 Text(
-                    text = "  ${if (time.isDone) "✅" else "❌"}: ${time.value / 60}:${time.value % 60}(time.value)} | ${
+                    text = "  ${if (time.isDone) "✅" else "❌"}: ${time.value / 60}:${time.value % 60} | ${
                         exercise.weight?.getOrNull(
                             index
                         )?.value ?: 0
@@ -424,12 +422,12 @@ fun ExerciseDetails(exercise: ParsedExercise) {
             }
         } else {
             Text(
-                text = "🔢 Reps-Based: ${exercise.reps?.filter { it.isDone }?.size}/${exercise.reps?.size} sets completed",
+                text = "🔢 Reps-Based: ${exercise.inset?.filter { it.isDone }?.size}/${exercise.inset?.size} sets completed",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFE0E0E0)
             )
-            exercise.reps?.forEachIndexed { index, rep ->
+            exercise.inset?.forEachIndexed { index, rep ->
                 Text(
                     text = "  ${if (rep.isDone) "✅" else "❌"}: ${rep.value} reps | ${
                         exercise.weight?.getOrNull(

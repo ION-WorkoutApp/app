@@ -12,10 +12,34 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Update
 import com.google.gson.Gson
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.JsonPrimitive
+import com.google.gson.JsonSerializationContext
+import com.google.gson.JsonSerializer
 import com.google.gson.reflect.TypeToken
 import com.ion606.workoutapp.screens.activeExercise.SuperSet
 import kotlinx.coroutines.flow.Flow
+import java.lang.reflect.Type
 import java.util.UUID
+
+
+enum class ExerciseMeasureType(val value: Int) {
+    REP_BASED(0),
+    TIME_BASED(1),
+    DISTANCE_BASED(2);
+
+    companion object {
+        fun fromValue(value: Int): ExerciseMeasureType {
+            return entries.find { it.value == value } ?: REP_BASED
+        }
+
+        fun useTime(o: ExerciseMeasureType): Boolean {
+            return (o != REP_BASED)
+        }
+    }
+}
 
 
 @Entity
@@ -30,7 +54,7 @@ data class Exercise(
     val rating: Float,
     val ratingDescription: String,
     val videoPath: String,
-    val timeBased: Boolean,
+    val measureType: ExerciseMeasureType,
     val perSide: Boolean
 )
 
@@ -40,8 +64,23 @@ data class ExerciseSetDataObj(
     val value: Int,
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     var isDone: Boolean = false,
+    var distance: Int? = null,
     var restTime: Int = 0
 )
+
+class ExerciseMeasureTypeAdapter : JsonDeserializer<ExerciseMeasureType>, JsonSerializer<ExerciseMeasureType> {
+    override fun deserialize(
+        json: JsonElement?,
+        typeOfT: Type?,
+        context: JsonDeserializationContext?
+    ): ExerciseMeasureType? {
+        return json?.asInt?.let { ExerciseMeasureType.fromValue(it) }
+    }
+
+    override fun serialize(src: ExerciseMeasureType?, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
+        return JsonPrimitive(src?.value)
+    }
+}
 
 
 class SetListConverter {
@@ -56,6 +95,18 @@ class SetListConverter {
     }
 }
 
+class ExerciseMeasureTypeConverter {
+
+    @TypeConverter
+    fun fromExerciseMeasureType(type: ExerciseMeasureType): Int {
+        return type.value
+    }
+
+    @TypeConverter
+    fun toExerciseMeasureType(value: Int): ExerciseMeasureType {
+        return ExerciseMeasureType.fromValue(value)
+    }
+}
 
 class ActiveExerciseListConverter {
     @TypeConverter
@@ -108,8 +159,7 @@ data class ActiveExercise(
     var sets: Int,
     var setsDone: Int,
     var superset: SuperSet? = null,
-    @TypeConverters(SetListConverter::class) var reps: MutableList<ExerciseSetDataObj>? = null,
-    @TypeConverters(SetListConverter::class) var times: MutableList<ExerciseSetDataObj>? = null,
+    @TypeConverters(SetListConverter::class) var inset: MutableList<ExerciseSetDataObj>? = null,
     @TypeConverters(SetListConverter::class) var weight: MutableList<ExerciseSetDataObj>? = null,
     var isDone: Boolean = false,
     var restTime: Int = 0
@@ -121,10 +171,9 @@ data class ActiveExercise(
         other as ActiveExercise
 
         if (exercise != other.exercise) return false
-        if (sets != other.sets) return false
+        if (inset != other.inset) return false
         if (setsDone != other.setsDone) return false
-        if (reps != other.reps) return false
-        if (times != other.times) return false
+        if (inset != other.inset) return false
         if (weight != other.weight) return false
 
         return true
@@ -134,8 +183,7 @@ data class ActiveExercise(
         var result = exercise.hashCode()
         result = 31 * result + sets
         result = 31 * result + setsDone
-        result = 31 * result + (reps?.hashCode() ?: 0)
-        result = 31 * result + (times?.hashCode() ?: 0)
+        result = 31 * result + (inset?.hashCode() ?: 0)
         result = 31 * result + weight.hashCode()
         return result
     }

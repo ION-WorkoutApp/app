@@ -17,12 +17,13 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import org.json.JSONObject
 import java.io.IOException
 import kotlin.coroutines.resume
 
 private const val TAG = "SyncManager"
 
-class SyncManager(private var baseURL: String? = null, private var context : Context? = null) {
+class SyncManager(private var baseURL: String? = null, private var context: Context? = null) {
     private val headers = mutableMapOf("content-type" to "application/json");
     private var authManager: AuthManager? = null;
 
@@ -65,6 +66,20 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
         }
     }
 
+    private fun extractResponseMessage(jsonString: String?): String? {
+        return try {
+            if (jsonString == null) return null
+            val jsonObject = JSONObject(jsonString)
+            if (jsonObject.length() == 1) { // if only one key
+                jsonObject.optString("message", jsonObject.optString("error", jsonString))
+            } else {
+                jsonString
+            }
+        } catch (e: Exception) {
+            jsonString
+        }
+    }
+
     suspend fun sendData(
         payload: Map<String, Any>,
         endpoint: String? = this.baseURL,
@@ -88,15 +103,11 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
 
         if (path == "isindebugmode") Log.d(TAG, "debug pinging $baseURLToUse")
         else if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
-            TAG,
-            "Debug: Sending a $method request to $urlToUse with data $jsonData"
+            TAG, "Debug: Sending a $method request to $urlToUse with data $jsonData"
         )
 
-        val request = Request.Builder()
-            .url(urlToUse)
-            .headers(headers.toMap().toHeaders())
-            .method(method, if (method == "GET" || method == "HEAD") null else requestBody)
-            .build()
+        val request = Request.Builder().url(urlToUse).headers(headers.toMap().toHeaders())
+            .method(method, if (method == "GET" || method == "HEAD") null else requestBody).build()
 
         return suspendCancellableCoroutine { continuation ->
             OkHttpClient().newCall(request).enqueue(object : Callback {
@@ -106,8 +117,7 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
 
                     if (continuation.isActive) continuation.resume(
                         Pair(
-                            false,
-                            "Failed to sync data"
+                            false, "Failed to sync data"
                         )
                     )
                 }
@@ -118,11 +128,10 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
                             val responseBody = response.body?.string()
 
                             if (BuildConfig.SENSITIVE_LOGGING_ENABLED && path != "isindebugmode") Log.d(
-                                TAG,
-                                "Debug: Data synced successfully: $responseBody"
+                                TAG, "Debug: Data synced successfully: $responseBody"
                             )
 
-                            if (continuation.isActive) continuation.resume(Pair(true, responseBody))
+                            if (continuation.isActive) continuation.resume(Pair(true, extractResponseMessage(responseBody)))
                             else null;
                         } else {
                             val errmsg = response.body?.string() ?: response.message
@@ -138,11 +147,10 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
                                     Log.d(TAG, "Auth manager is null. Cannot refresh token.")
                                     if (continuation.isActive) continuation.resume(
                                         Pair(
-                                            false,
-                                            "Token expired"
+                                            false, "Token expired"
                                         )
                                     )
-                                    
+
                                     return
                                 }
 
@@ -151,14 +159,14 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
                                     val refreshed = authManager.refreshToken()
                                     if (refreshed) {
                                         sendData(payload, endpoint, path, method, authManager).let {
+                                            // don't use extractResponseMessage because it might be smth else?
                                             if (continuation.isActive) continuation.resume(it)
                                         }
                                     } else {
                                         Log.d(TAG, "Failed to refresh token. User needs to log in.")
                                         if (continuation.isActive) continuation.resume(
                                             Pair(
-                                                false,
-                                                "Failed to refresh token"
+                                                false, "Failed to refresh token"
                                             )
                                         )
                                     }
@@ -166,10 +174,10 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
                             } else if (errmsg.contains("Invalid token", ignoreCase = true)) {
                                 Log.d(TAG, "Invalid token. User needs to log in.")
 
-                                if (continuation.isActive) continuation.resume(Pair(false, errmsg))
+                                if (continuation.isActive) continuation.resume(Pair(false, extractResponseMessage(errmsg)))
                                 else null;
                             } else {
-                                if (continuation.isActive) continuation.resume(Pair(false, errmsg))
+                                if (continuation.isActive) continuation.resume(Pair(false, extractResponseMessage(errmsg)))
                                 else null;
                             }
                         }
@@ -188,10 +196,7 @@ class SyncManager(private var baseURL: String? = null, private var context : Con
         for (i in 1..3) {
             Log.d(TAG, "DEBUG: Pinging server at $u");
 
-            val request = Request.Builder()
-                .url("$u/ping")
-                .head()
-                .build();
+            val request = Request.Builder().url("$u/ping").head().build();
 
             try {
                 val response = OkHttpClient().newCall(request).execute()

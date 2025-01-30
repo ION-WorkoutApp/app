@@ -35,6 +35,7 @@ import com.ion606.workoutapp.helpers.LoadingScreen
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.UserManager
+import com.ion606.workoutapp.screens.activeExercise.SuperSetDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,6 +48,7 @@ fun DetailsScreen(
     dataManager: DataManager,
     userManager: UserManager,
     context: Context,
+    dao: SuperSetDao,
     nhelper: NotificationManager
 ) {
     val isLoggedIn = dataManager.isLoggedIn()
@@ -62,7 +64,7 @@ fun DetailsScreen(
     LaunchedEffect(isLoggedIn) {
         try {
             if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
-                "MAIN",
+                "WARNING",
                 "LOGGING SENSITIVE DATA (to change this switch BuildConfig.SENSITIVE_LOGGING_ENABLED to false)"
             )
 
@@ -209,7 +211,10 @@ fun DetailsScreen(
 
                 Button(onClick = {
                     dataManager.clearCache()
-                    navController.navigate("login_signup")
+                    coroutineScope.launch {
+                        dao.deleteAll()
+                        navController.navigate("login_signup")
+                    }
                 }) {
                     Text("Log Out and Try Again")
                 }

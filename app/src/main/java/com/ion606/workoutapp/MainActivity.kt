@@ -113,7 +113,7 @@ class MainActivity : ComponentActivity() {
                         composable("details") {
                             if (!runDebugChecks.value) runDebugChecks.value = true;
                             DetailsScreen(
-                                navController, dataManager, userManager, this@MainActivity, nhelper
+                                navController, dataManager, userManager, this@MainActivity, dao, nhelper
                             )
                         }
                         composable("login_signup") { LoginSignupScreen(navController) }

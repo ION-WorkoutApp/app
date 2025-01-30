@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.password
 import androidx.compose.ui.semantics.semantics
@@ -140,7 +141,7 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                 .padding(innerPadding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top,
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when (step.value) {
                 1 -> {
@@ -278,7 +279,8 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                                 if (!rPing) {
                                     scope.launch(Dispatchers.Main) {
                                         tempstr.value = "Server is not reachable!"
-                                        tempsubheading.value = "Please check the server URL and try again."
+                                        tempsubheading.value =
+                                            "Please check the server URL and try again."
                                     }
                                     return@launch
                                 }
@@ -302,19 +304,24 @@ fun Signup(navController: NavController, dataManager: DataManager) {
                                     userData,
                                     serverUrl.value
                                 )
-                                if (!success) {
-                                    println("SIGNUP FAILED WITH ERROR $v!");
-                                    if (v!!.contains("Client must be connected before running operations")) {
-                                        scope.launch(Dispatchers.Main) {
+
+                                scope.launch(Dispatchers.Main) {
+                                    if (!success) {
+                                        println("SIGNUP FAILED WITH ERROR $v!");
+                                        if (v!!.contains("Client must be connected before running operations")) {
                                             tempstr.value =
                                                 "SERVER ERROR! PLEASE CONTACT YOUR ADMIN OR CHECK SERVER LOGS!"
                                             tempsubheading.value =
                                                 "if you ARE an admin and have recently set up your server, try restarting the server and try again."
+                                        } else if (v.contains("Message: Conflict")) {
+                                            tempstr.value = "Signup Error!"
+                                            tempsubheading.value = "a user with the email ${email.value} already exists!"
+                                        } else {
+                                            tempstr.value = "Signup failed!"
+                                            tempsubheading.value = "Error: $v"
                                         }
-                                    } else scope.launch(Dispatchers.Main) {
-                                        tempstr.value = "Signup failed!"
-                                    }
-                                } else scope.launch(Dispatchers.Main) { navController.navigate("home") }
+                                    } else navController.navigate("home")
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()

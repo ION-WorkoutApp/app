@@ -18,9 +18,12 @@ import androidx.navigation.NavController
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.ion606.workoutapp.dataObjects.CategoryData
 import com.ion606.workoutapp.dataObjects.Exercise
 import com.ion606.workoutapp.dataObjects.ExerciseFilter
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureTypeAdapter
 import com.ion606.workoutapp.dataObjects.ParsedActiveExercise
 import com.ion606.workoutapp.dataObjects.SanitizedUserDataObj
 import com.ion606.workoutapp.dataObjects.UserDataObj
@@ -102,7 +105,11 @@ class UserManager(
 
         if (response.first) {
             val jsonData = response.second as String
-            return Gson().fromJson(jsonData, ExerciseResponse::class.java)
+            val gson = GsonBuilder()
+                .registerTypeAdapter(ExerciseMeasureType::class.java, ExerciseMeasureTypeAdapter())
+                .create()
+
+            return gson.fromJson(jsonData, ExerciseResponse::class.java)
         } else {
             Log.d(TAG, "Error: ${response.second}")
             return ExerciseResponse(listOf(), 0, 0, 0)

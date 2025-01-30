@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.ion606.workoutapp.R
 import com.ion606.workoutapp.dataObjects.ActiveExercise
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.WorkoutViewModel
 import kotlinx.coroutines.launch
 import kotlin.collections.component1
@@ -504,13 +505,15 @@ fun ExerciseBox(
                         color = if (exercise.isDone) Color.LightGray else Color.White
                     )
 
-                    val secondLinePart = if (exercise.reps != null) {
-                        "${(exercise.reps?.map { it.value })?.average() ?: "???"} average reps"
+                    val measureStr = if (ExerciseMeasureType.useTime(exercise.exercise.measureType)) "time" else "reps"
+                    var secondLinePart = "${(exercise.inset?.map { it.value })?.average() ?: "???"} average $measureStr"
+
+                    if (exercise.inset != null && exercise.exercise.measureType == ExerciseMeasureType.DISTANCE_BASED) {
+                        secondLinePart += " with ${exercise.inset!!.mapNotNull { it.distance }.average()} average distance"
                     }
-                    else "${(exercise.times?.map { it.value })?.average() ?: "???"} average time"
 
                     Text(
-                        text = "${exercise.reps!!.size} sets, $secondLinePart",
+                        text = "${exercise.inset!!.size} sets, $secondLinePart",
                         style = MaterialTheme.typography.bodySmall,
                         fontSize = 14.sp,
                         color = if (exercise.isDone) Color.Gray else Color(0xFFAAAAAA),

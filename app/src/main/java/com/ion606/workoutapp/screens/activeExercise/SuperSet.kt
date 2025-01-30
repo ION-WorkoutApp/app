@@ -20,6 +20,7 @@ import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.ActiveExerciseDao
 import com.ion606.workoutapp.dataObjects.ActiveExerciseListConverter
 import com.ion606.workoutapp.dataObjects.Exercise
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureTypeConverter
 import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
 import com.ion606.workoutapp.dataObjects.SetListConverter
 import kotlinx.coroutines.flow.Flow
@@ -146,6 +147,9 @@ interface SuperSetDao {
     @Delete
     suspend fun delete(superSet: SuperSet)
 
+    @Query("DELETE FROM SuperSet")
+    suspend fun deleteAll()
+
     // get the total count of supersets
     @Query("SELECT COUNT(*) FROM SuperSet")
     suspend fun size(): Int
@@ -157,7 +161,7 @@ interface SuperSetDao {
     version = 1,
     exportSchema = false
 )
-@TypeConverters(SetListConverter::class, SuperSetConverter::class, ActiveExerciseListConverter::class)
+@TypeConverters(SetListConverter::class, SuperSetConverter::class, ActiveExerciseListConverter::class, ExerciseMeasureTypeConverter::class)
 abstract class WorkoutDatabase : RoomDatabase() {
     abstract fun activeExerciseDao(): ActiveExerciseDao
     abstract fun superSetDao(): SuperSetDao

@@ -9,8 +9,7 @@ data class ParsedActiveExercise(
     @SerializedName("sets") val sets: Int,                // Matches "sets" in JSON
     @SerializedName("setsDone") val setsDone: Int,        // Matches "setsDone" in JSON
     @SerializedName("isDone") val isDone: Boolean,        // Matches "isDone" in JSON
-    @SerializedName("reps") val reps: List<ParsedSetData>?,
-    @SerializedName("times") val times: List<ParsedSetData>?,
+    @SerializedName("inset") val inset: List<ParsedSetData>?,
     @SerializedName("weight") val weight: List<ParsedSetData>?,
     @SerializedName("createdAt") val createdAt: String
 )
@@ -26,9 +25,8 @@ data class ParsedExercise(
     @SerializedName("rating") val rating: Float,
     @SerializedName("ratingDescription") val ratingDescription: String,
     @SerializedName("videoPath") val videoPath: String,
-    @SerializedName("timeBased") val timeBased: Boolean,
-    @SerializedName("reps") val reps: List<ParsedSetData>?,
-    @SerializedName("times") val times: List<ParsedSetData>?,
+    @SerializedName("measure") val measure: ExerciseMeasureType,
+    @SerializedName("inset") val inset: List<ParsedSetData>?,
     @SerializedName("weight") val weight: List<ParsedSetData>?,
     @SerializedName("sets") val sets: Int?
 )
@@ -72,16 +70,8 @@ fun convertActiveExerciseToParsed(activeExercise: ActiveExercise): ParsedActiveE
                 rating = activeExercise.exercise.rating,
                 ratingDescription = activeExercise.exercise.ratingDescription,
                 videoPath = activeExercise.exercise.videoPath,
-                timeBased = activeExercise.exercise.timeBased,
-                reps = activeExercise.reps?.map {
-                    ParsedSetData(
-                        id = it.id,
-                        isDone = it.isDone,
-                        value = it.value,
-                        restTime = it.restTime
-                    )
-                },
-                times = activeExercise.times?.map {
+                measure = activeExercise.exercise.measureType,
+                inset = activeExercise.inset?.map {
                     ParsedSetData(
                         id = it.id,
                         isDone = it.isDone,
@@ -103,15 +93,7 @@ fun convertActiveExerciseToParsed(activeExercise: ActiveExercise): ParsedActiveE
         sets = activeExercise.sets,
         setsDone = activeExercise.setsDone,
         isDone = activeExercise.isDone,
-        reps = activeExercise.reps?.map {
-            ParsedSetData(
-                id = it.id,
-                isDone = it.isDone,
-                value = it.value,
-                restTime = it.restTime
-            )
-        },
-        times = activeExercise.times?.map {
+        inset = activeExercise.inset?.map {
             ParsedSetData(
                 id = it.id,
                 isDone = it.isDone,

@@ -47,6 +47,7 @@ import com.ion606.workoutapp.R
 import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.Exercise
 import com.ion606.workoutapp.dataObjects.ExerciseFilter
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.ExercisePickerState
 import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
 import com.ion606.workoutapp.dataObjects.rememberExercisePickerState
@@ -66,10 +67,7 @@ private const val TAG = "ExercisePopup"
 // TODO: come up with a better way to give rep/set recommendations
 fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<SuperSet> {
     val setsCount = 5
-    val repList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
-        ExerciseSetDataObj(i)
-    }
-    val timesList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
+    val inset = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
         ExerciseSetDataObj(i)
     }
     val weightsList = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
@@ -77,14 +75,20 @@ fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<SuperSet>
     }
 
     return checkedExercises.map {
+        Log.d("ADDING ACTIVE EXERCISE", it.toString());
+
         SuperSet(exercises = SnapshotStateList<ActiveExercise>().apply {
             add(
                 ActiveExercise(
                     exercise = it,
                     sets = setsCount,
                     setsDone = 0,
-                    reps = repList.map { it.copy(id = UUID.randomUUID().toString()) }.toMutableList(),
-                    times = timesList.map { it.copy(id = UUID.randomUUID().toString()) }.toMutableList(),
+                    inset = inset.map { subset ->
+                        if (it.measureType == ExerciseMeasureType.DISTANCE_BASED) {
+                            subset.copy(id = UUID.randomUUID().toString(), distance = 0)
+                        }
+                        else subset.copy(id = UUID.randomUUID().toString())
+                    }.toMutableList(),
                     weight = weightsList.map { it.copy(id = UUID.randomUUID().toString()) }.toMutableList()
                 )
             )
@@ -132,8 +136,8 @@ class ExercisePickerPopup {
                         )
 
                         if (response.exercises.isEmpty()) {
-                            Log.d(TAG, "No exercises found")
                             state.exercises.clear()
+                            state.isLoading.value = false
                         } else {
                             state.exercises.addAll(
                                 response.exercises.sortBySimilarityOrDefault(
