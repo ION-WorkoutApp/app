@@ -1,10 +1,11 @@
 package com.ion606.workoutapp.elements
 
-import android.content.Context
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -12,76 +13,60 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateWorkoutLogDropdown(
-    buttonText: String = "Open Menu",
-    modifier: Modifier = Modifier,
-    context: Context,
-    onEditTime: () -> Unit,
-    onDelete: () -> Unit,
-    onSave: () -> Unit
+fun DropdownMenuField(
+    label: String,
+    options: List<String>,
+    value: String,
+    onValueChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var isEditingTime by remember { mutableStateOf(false) }
-    var timeText by remember { mutableStateOf(TextFieldValue("")) }
+    var selectedText by remember { mutableStateOf(value) }
 
-    Box(modifier = modifier) {
-        Button(onClick = { expanded = true }) {
-            Text(text = buttonText)
-        }
-
-        DropdownMenu(
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier
+            .fillMaxWidth()
+            // Adding zIndex to ensure the dropdown menu appears above other components
+            .zIndex(1f)
+    ) {
+        OutlinedTextField(
+            value = selectedText,
+            onValueChange = { /* No-op since it's read-only */ },
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // Ensuring the text field aligns properly within the box
+                .menuAnchor()
+        )
+        ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            // Adding zIndex to ensure the dropdown menu appears above other components
+            modifier = Modifier
+                .zIndex(1f)
         ) {
-            DropdownMenuItem(
-                onClick = {
-                    expanded = false
-                    isEditingTime = true
-                },
-                text = {
-                    Text(
-                        text = "Edit Time",
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
-                }
-            )
-
-            DropdownMenuItem(
-                onClick = {
-                    expanded = false
-                    onDelete()
-                },
-                text = {
-                    Text(
-                        text = "Delete",
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
-                }
-            )
-
-            DropdownMenuItem(
-                onClick = {
-                    expanded = false
-                    onSave()
-                },
-                text = {
-                    Text(
-                        text = "Save Workout",
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
-                }
-            )
+            options.forEach { selectionOption ->
+                DropdownMenuItem(
+                    text = { Text(text = selectionOption) },
+                    onClick = {
+                        selectedText = selectionOption
+                        onValueChange(selectionOption)
+                        expanded = false
+                    },
+                    // Optionally, you can style the menu items here
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
         }
-
-        if (isEditingTime) onEditTime()
     }
 }
-

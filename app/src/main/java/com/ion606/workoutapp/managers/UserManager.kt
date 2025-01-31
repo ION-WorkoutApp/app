@@ -3,13 +3,8 @@ package com.ion606.workoutapp.managers
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -25,22 +20,24 @@ import com.ion606.workoutapp.dataObjects.ExerciseFilter
 import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.ExerciseMeasureTypeAdapter
 import com.ion606.workoutapp.dataObjects.ParsedActiveExercise
-import com.ion606.workoutapp.dataObjects.SanitizedUserDataObj
-import com.ion606.workoutapp.dataObjects.UserDataObj
-import com.ion606.workoutapp.helpers.Alerts
-import com.ion606.workoutapp.helpers.Alerts.Companion.ConfirmDeleteAccountDialog
+import com.ion606.workoutapp.dataObjects.User.Notifications
+import com.ion606.workoutapp.dataObjects.User.SanitizedUserDataObj
+import com.ion606.workoutapp.dataObjects.User.SocialPreferences
+import com.ion606.workoutapp.dataObjects.User.UserDataObj
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-
 private const val TAG = "UserManager"
+
+// Extension property for DataStore
 val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
 class UserManager(
-    private val context: Context, private val dm: DataManager, private val sm: SyncManager
+    private val context: Context,
+    private val dm: DataManager,
+    private val sm: SyncManager
 ) {
     private val sharedPreferences: SharedPreferences
     private var userData: UserDataObj? = null
@@ -52,7 +49,6 @@ class UserManager(
         get() = context.dataStore.data.map { preferences ->
             preferences[MINIMALIST_MODE_KEY] ?: false
         }
-
 
     init {
         // Initialize EncryptedSharedPreferences
@@ -70,15 +66,26 @@ class UserManager(
             }.first()
         }
 
+        // Optionally, load user data from local storage or fetch from backend
+        // loadUserData()
     }
 
+    /**
+     * Sealed class to represent fetch user data results
+     */
     sealed class FetchUserDataResult {
         data class Success(val data: UserDataObj?) : FetchUserDataResult()
         data class Error(val message: String) : FetchUserDataResult()
     }
 
+    /**
+     * Fetch exercises with optional filters
+     */
     data class ExerciseResponse(
-        val exercises: List<Exercise>, val total: Int, val page: Int, val pageSize: Int
+        val exercises: List<Exercise>,
+        val total: Int,
+        val page: Int,
+        val pageSize: Int
     )
 
     fun Map<String, String>.toQueryParams(): String {
@@ -87,7 +94,9 @@ class UserManager(
     }
 
     suspend fun fetchExercises(
-        filter: ExerciseFilter? = ExerciseFilter(), page: Int? = 0, pageSize: Int = 20
+        filter: ExerciseFilter? = ExerciseFilter(),
+        page: Int? = 0,
+        pageSize: Int = 20
     ): ExerciseResponse {
         val requestData = if (filter != null) mapOf(
             "muscleGroup" to (filter.muscleGroup ?: ""),
@@ -96,11 +105,12 @@ class UserManager(
             "term" to (filter.term ?: ""),
             "page" to page.toString(),
             "pageSize" to pageSize.toString()
-        )
-        else mapOf()
+        ) else mapOf()
 
         val response = sm.sendData(
-            emptyMap(), path = "exercises/exercises?${requestData.toQueryParams()}", method = "GET"
+            emptyMap(),
+            path = "exercises/exercises?${requestData.toQueryParams()}",
+            method = "GET"
         )
 
         if (response.first) {
@@ -111,14 +121,22 @@ class UserManager(
 
             return gson.fromJson(jsonData, ExerciseResponse::class.java)
         } else {
-            Log.d(TAG, "Error: ${response.second}")
+            Log.d(TAG, "Error fetching exercises: ${response.second}")
             return ExerciseResponse(listOf(), 0, 0, 0)
         }
     }
 
+    /**
+     * Fetch user data from backend
+     */
     suspend fun fetchUserData(): FetchUserDataResult {
         val baseURL = sm.getBaseURL() ?: return FetchUserDataResult.Error("Base URL is null")
-        val udata = sm.sendData(mapOf(), baseURL, "users/userdata", "GET", dm.authManager)
+        val udata = sm.sendData(
+            emptyMap(),
+            path = "users/userdata",
+            method = "GET",
+            authManager = dm.authManager
+        )
 
         Log.d(TAG, "DEBUG: udata: ${UserDataObj.fromString(udata.second as String)}")
 
@@ -129,26 +147,36 @@ class UserManager(
         }
     }
 
+    /**
+     * Fetch categories from backend
+     */
     suspend fun fetchCategories(): CategoryData? {
         val response = sm.sendData(
             mapOf("field" to "bodyPart"),
             path = "exercises/categories?field=bodyPart",
-            method = "GET"
+            method = "GET",
+            authManager = dm.authManager
         )
 
         if (response.first) {
             println(response.second)
             return Gson().fromJson((response.second as String), CategoryData::class.java)
         } else {
-            Log.d(TAG, "Error: ${response.second}")
+            Log.d(TAG, "Error fetching categories: ${response.second}")
             return null
         }
     }
 
+    /**
+     * Load user data into UserManager
+     */
     fun loadData(userData: UserDataObj) {
         this.userData = UserDataObj(userData)
     }
 
+    /**
+     * Clear preferences from EncryptedSharedPreferences
+     */
     fun clearPreferences(key: String? = null) {
         if (key == null) {
             sharedPreferences.edit().clear().apply()
@@ -157,11 +185,24 @@ class UserManager(
         }
     }
 
+    /**
+     * Get sanitized user data (without sensitive info)
+     */
     fun getUserData(): SanitizedUserDataObj? {
         return if (userData == null) null
         else SanitizedUserDataObj(userData!!)
     }
 
+    /**
+     * Get all user data (including sensitive info)
+     */
+    fun getAllUserData(): UserDataObj? {
+        return userData
+    }
+
+    /**
+     * Check if the provided password matches the current user's password
+     */
     private fun checkPassword(password: String?): Pair<Boolean, String?> {
         if (userData == null) {
             return Pair(false, "User data is null")
@@ -172,101 +213,213 @@ class UserManager(
         } else return Pair(true, null)
     }
 
-    // the password fields are only needed if you're changing the password or URL
+    /**
+     * Update user data including password changes
+     */
     suspend fun updateUserData(
-        user: SanitizedUserDataObj, oldPassword: String? = null, newPassword: String? = null
+        user: SanitizedUserDataObj,
+        oldPassword: String? = null,
+        newPassword: String? = null
     ): Pair<Boolean, String?> {
         val passChecked = checkPassword(oldPassword)
         if (newPassword != null && !passChecked.first) return passChecked
-        else if (newPassword != null) {
-            userData = user.toUserDataObj(newPassword)
-            this.sm.sendData(userData!!.toMap(), path = "users/updatedetails", method = "PUT")
+        return if (newPassword != null) {
+            // User is changing password
+            val updatedUser = user.toUserDataObj(newPassword)
+            val response = sm.sendData(
+                updatedUser.toMap(),
+                path = "users/updatedetails",
+                method = "PUT",
+                authManager = dm.authManager
+            )
+            if (response.first) {
+                userData = updatedUser.copy(password = "") // Exclude password
+                Pair(true, null)
+            } else {
+                Log.e(TAG, "Failed to update user data: ${response.second}")
+                Pair(false, response.second as? String ?: "Unknown error.")
+            }
         } else {
-            userData = user.toUserDataObj(userData!!.password)
-            this.sm.sendData(userData!!.toMap(), path = "users/updatedetails", method = "PUT")
+            // User is updating other details without changing password
+            val updatedUser = user.toUserDataObj(userData!!.password)
+            val response = sm.sendData(
+                updatedUser.toMap(),
+                path = "users/updatedetails",
+                method = "PUT",
+                authManager = dm.authManager
+            )
+            if (response.first) {
+                this.userData = updatedUser.copy()
+                Pair(true, null)
+            } else {
+                Log.e(TAG, "Failed to update user data: ${response.second}")
+                Pair(false, response.second as? String ?: "Unknown error.")
+            }
         }
-        return Pair(true, null);
     }
 
-    @Composable
-    fun DeleteAccount(navController: NavController) {
-        val scope = rememberCoroutineScope()
-        val status = remember { mutableIntStateOf(0) }
-        val errmsg = remember { mutableStateOf("") }
-        val confirmed = remember { mutableStateOf(false) }
+    /**
+     * Update Notifications Preferences
+     */
+    suspend fun updateNotifications(updatedPrefs: Notifications): Pair<Boolean, String?> {
+        val currentUser = getAllUserData() ?: return Pair(false, "User data not loaded.")
+        val updatedUser = currentUser.copy(notifications = updatedPrefs)
+        return updateUserInBackend(updatedUser)
+    }
 
-        if (errmsg.value.isNotEmpty()) {
-            Alerts.ShowAlert({}, "Failed to delete account!", errmsg.value)
+    /**
+     * Update Social Preferences
+     */
+    suspend fun updateSocialPreferences(updatedPrefs: SocialPreferences): Pair<Boolean, String?> {
+        val currentUser = getAllUserData() ?: return Pair(false, "User data not loaded.")
+        val updatedUser = currentUser.copy(socialPreferences = updatedPrefs)
+        return updateUserInBackend(updatedUser)
+    }
+
+    /**
+     * Generic function to update user in the backend
+     */
+    private suspend fun updateUserInBackend(updatedUser: UserDataObj): Pair<Boolean, String?> {
+        return try {
+            val response = sm.sendData(
+                updatedUser.toMap(),
+                path = "users/updatedetails",
+                method = "PUT",
+                authManager = dm.authManager
+            )
+            if (response.first) {
+                userData = updatedUser.copy(password = "") // Exclude password
+                Pair(true, null)
+            } else {
+                Log.e(TAG, "Failed to update user preferences: ${response.second}")
+                Pair(false, response.second as? String ?: "Unknown error.")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception during user update: ${e.message}")
+            Pair(false, e.message)
         }
+    }
 
-        ConfirmDeleteAccountDialog({ confirmed.value = false }, {
-            val checked = checkPassword(it);
-            if (checked.first) confirmed.value = true
-            else errmsg.value = checked.second ?: "Failed to check password"
-        });
-
-        if (confirmed.value) {
-            if (status.intValue == 1) {
+    /**
+     * Delete Account
+     */
+    suspend fun deleteAccount(navController: NavController): Pair<Boolean, String?> {
+        return try {
+            val response = sm.sendData(
+                emptyMap(),
+                path = "users/deleteaccount",
+                method = "DELETE",
+                authManager = dm.authManager
+            )
+            if (response.first) {
+                // Clear local data
                 clearPreferences()
-                this.dm.clearCache()
-                Alerts.ShowAlert(
-                    { if (it) navController.navigate("restart_app") else navController.navigate("exit_app") },
-                    "Account deleted successfully",
-                    "press OK to restart the app, press Exit to quit the app"
-                )
-            } else if (status.intValue == 2) {
-                Alerts.ShowAlert({ status.intValue = 0 }, "Failed to delete account!", errmsg.value)
-            }
-
-            LaunchedEffect("deleteaccount", sm) {
-                scope.launch {
-                    val r = sm.sendData(emptyMap(), path = "users/deleteaccount", method = "DELETE")
-                    if (r.first) status.intValue = 1
-                    else {
-                        status.intValue = 2
-                        errmsg.value = r.second as String
-                    }
+                dm.clearCache()
+                // Navigate to restart or exit
+                navController.navigate("restart_app") {
+                    popUpTo("home") { inclusive = true }
                 }
+                Pair(true, null)
+            } else {
+                Log.e(TAG, "Failed to delete account: ${response.second}")
+                Pair(false, response.second as? String ?: "Unknown error.")
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception during account deletion: ${e.message}")
+            Pair(false, e.message)
         }
     }
 
-    // Function to toggle the preference
+    /**
+     * Toggle Minimalist Mode
+     */
     suspend fun toggleMinimalistMode() {
-        this.context.dataStore.edit { preferences ->
+        context.dataStore.edit { preferences ->
             val currentMode = preferences[MINIMALIST_MODE_KEY] ?: false
             Log.d(TAG, "SET USER MIN MODE TO ${!currentMode}")
             preferences[MINIMALIST_MODE_KEY] = !currentMode
-//            this.isMinimalistMode = !currentMode
         }
     }
 
+    /**
+     * Get Base URL from SyncManager
+     */
     fun getURL(): String? {
-        return this.sm.getBaseURL()
+        return sm.getBaseURL()
     }
 
+    /**
+     * Delete a specific workout
+     */
     suspend fun deleteWorkout(workout: ParsedActiveExercise): Pair<Boolean, Any?> {
-        return this.sm.sendData(
-            mapOf("id" to workout.id), path = "workouts/workout", method = "DELETE"
+        return sm.sendData(
+            mapOf("id" to workout.id),
+            path = "workouts/workout",
+            method = "DELETE",
+            authManager = dm.authManager
         )
     }
 
+    /**
+     * Request user data export
+     */
     suspend fun requestData(format: String? = null): Pair<Boolean, Any?> {
         if (format.isNullOrEmpty()) return Pair(false, "Format is empty")
-        else if (!listOf("json", "csv", "ics").contains(format)) return Pair(
-            false, "Invalid format"
-        )
-        val r = this.sm.sendData(emptyMap(), path = "udata/canrequest", method = "GET")
-        if (!r.first) return r;
+        if (!listOf("json", "csv", "ics").contains(format.lowercase())) return Pair(false, "Invalid format")
 
-        return this.sm.sendData(
-            mapOf(
-                "format" to format
-            ), path = "udata/export", method = "POST"
+        val canRequest = sm.sendData(
+            emptyMap(),
+            path = "udata/canrequest",
+            method = "GET",
+            authManager = dm.authManager
+        )
+        if (!canRequest.first) return canRequest
+
+        return sm.sendData(
+            mapOf("format" to format.lowercase()),
+            path = "udata/export",
+            method = "POST",
+            authManager = dm.authManager
         )
     }
 
+    /**
+     * Check data export request status
+     */
     suspend fun checkDataStatus(): Pair<Boolean, Any?> {
-        return this.sm.sendData(emptyMap(), path = "udata/status", method = "GET")
+        return sm.sendData(
+            emptyMap(),
+            path = "udata/status",
+            method = "GET",
+            authManager = dm.authManager
+        )
+    }
+
+    /**
+     * Load user data from backend and initialize UserManager
+     */
+    suspend fun initializeUserData(): Pair<Boolean, String?> {
+        val result = fetchUserData()
+        return when (result) {
+            is FetchUserDataResult.Success -> {
+                userData = result.data
+                Pair(true, null)
+            }
+            is FetchUserDataResult.Error -> Pair(false, result.message)
+        }
+    }
+
+    /**
+     * Get the sanitized user data as a JSON string (for debugging or serialization)
+     */
+    fun getSanitizedUserDataJson(): String? {
+        return getUserData()?.let { Gson().toJson(it) }
+    }
+
+    /**
+     * Get the full user data as a JSON string (be cautious with sensitive info)
+     */
+    fun getAllUserDataJson(): String? {
+        return getAllUserData()?.let { Gson().toJson(it) }
     }
 }
