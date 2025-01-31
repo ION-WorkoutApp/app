@@ -148,7 +148,6 @@ fun DangerZoneScreen(
             ) {
                 Spacer(modifier = Modifier.padding(top = 16.dp))
 
-                // Permissions Button
                 Button(
                     onClick = {
                         navController.navigate("permissions")
