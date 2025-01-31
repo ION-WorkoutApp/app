@@ -3,6 +3,7 @@ package com.ion606.workoutapp.screens.user
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -145,6 +146,8 @@ fun DangerZoneScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
+                Spacer(modifier = Modifier.padding(top = 16.dp))
+
                 // Permissions Button
                 Button(
                     onClick = {
@@ -160,16 +163,14 @@ fun DangerZoneScreen(
                 }
 
                 // Data Request Status
-                if (!checkDataStatus.isNullOrEmpty()) {
-                    Text(
-                        text = checkDataStatus ?: "",
-                        fontSize = 14.sp,
-                        color = Color.LightGray,
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .align(Alignment.CenterHorizontally)
-                    )
-                }
+                Text(
+                    text = checkDataStatus ?: "Loading Status...",
+                    fontSize = 15.sp,
+                    color = Color.LightGray,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
 
                 // Request Data Button
                 val btnModifier = if (canRequestData) {

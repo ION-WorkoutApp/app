@@ -17,7 +17,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.CenterAlignedTopAppBar as TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,7 @@ import com.ion606.workoutapp.elements.DropdownMenuField
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.launch
+import androidx.compose.material3.CenterAlignedTopAppBar as TopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +42,7 @@ fun GeneralPreferencesScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val user = userManager.getUserData()?.generalPreferences ?: return
+    val allData = userManager.getUserData() ?: return
 
     // State variables
     var activityLevel by remember { mutableStateOf(user.activityLevel) }
@@ -63,6 +64,39 @@ fun GeneralPreferencesScreen(
     val activityLevels = listOf("sedentary", "light", "moderate", "active", "very active")
     val workoutTimes = listOf("morning", "afternoon", "evening", "no preference")
     val workoutEnvironments = listOf("gym", "home", "outdoor", "no preference")
+
+    // State for dropdowns
+    val goals = listOf(
+        "Build Muscle",
+        "Lose Weight",
+        "Improve Endurance",
+        "Increase Strength",
+        "Enhance Flexibility & Mobility",
+        "General Fitness & Well-being",
+        "Sports Performance",
+        "Gain Weight & Bulk Up"
+    )
+    val workoutTypes = listOf(
+        "Gym Workouts",
+        "Home Workouts (Minimal Equipment)",
+        "Bodyweight Only",
+        "Cardio Focused",
+        "Strength Training",
+        "Yoga & Pilates",
+        "HIIT (High-Intensity Interval Training)",
+        "CrossFit Style Workouts"
+    )
+    val comfortLevels = listOf("Beginner", "Intermediate", "Advanced")
+
+    // preferences
+    var distanceUnit by remember { mutableStateOf(allData.distanceUnit) }
+    var fitnessGoal by remember { mutableStateOf(allData.fitnessGoal) }
+    var preferredWorkoutType by remember { mutableStateOf(allData.preferredWorkoutType) }
+    var comfortLevel by remember { mutableStateOf(allData.comfortLevel) }
+    var weightUnit by remember { mutableStateOf(allData.weightUnit) }
+    val weightUnits = listOf("kg", "lbs")
+    val distanceUnits = listOf("km", "miles")
+
 
     if (alertMsg.value.first.isNotEmpty()) {
         Alerts.ShowAlert(
@@ -111,28 +145,49 @@ fun GeneralPreferencesScreen(
                 OutlinedTextField(
                     value = workoutFrequency,
                     onValueChange = { workoutFrequency = it },
-                    label = { Text("Workout Frequency (1-7)") },
+                    label = { Text("Workouts Per Week (1-7)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                OutlinedTextField(
-                    value = injuriesOrLimitations,
-                    onValueChange = { injuriesOrLimitations = it },
-                    label = { Text("Injuries or Limitations (comma separated)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = equipmentAccess,
-                    onValueChange = { equipmentAccess = it },
-                    label = { Text("Equipment Access (comma separated)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+
+                // TODO: add equipment selection
+//                OutlinedTextField(
+//                    value = equipmentAccess,
+//                    onValueChange = { equipmentAccess = it },
+//                    label = { Text("Equipment Access (comma separated)") },
+//                    modifier = Modifier.fillMaxWidth()
+//                )
                 DropdownMenuField(
                     label = "Preferred Workout Environment",
                     options = workoutEnvironments,
                     value = preferredWorkoutEnvironment,
                     onValueChange = { preferredWorkoutEnvironment = it }
                 )
+
+                DropdownMenuField(label = "Weight Unit",
+                    options = weightUnits,
+                    value = weightUnit,
+                    onValueChange = { weightUnit = it })
+
+                DropdownMenuField(label = "Distance Unit",
+                    options = distanceUnits,
+                    value = distanceUnit,
+                    onValueChange = { distanceUnit = it })
+
+                DropdownMenuField(label = "Fitness Goal",
+                    options = goals,
+                    value = fitnessGoal,
+                    onValueChange = { fitnessGoal = it })
+
+                DropdownMenuField(label = "Preferred Workout Type",
+                    options = workoutTypes,
+                    value = preferredWorkoutType,
+                    onValueChange = { preferredWorkoutType = it })
+
+                DropdownMenuField(label = "Comfort Level",
+                    options = comfortLevels,
+                    value = comfortLevel,
+                    onValueChange = { comfortLevel = it })
 
                 Button(
                     onClick = {
@@ -162,7 +217,15 @@ fun GeneralPreferencesScreen(
                         )) ?: return@Button
 
                         coroutineScope.launch {
-                            val result = userManager.updateUserData(SanitizedUserDataObj(newUser))
+                            // add data I hastily moved from other screen
+                            val result = userManager.updateUserData(SanitizedUserDataObj(newUser.copy(
+                                weightUnit = weightUnit,
+                                distanceUnit = distanceUnit,
+                                fitnessGoal = fitnessGoal,
+                                preferredWorkoutType = preferredWorkoutType,
+                                comfortLevel = comfortLevel
+                            )));
+
                             if (result.first) {
                                 alertMsg.value = Pair("Success", "General preferences updated.")
                             } else {

@@ -394,32 +394,4 @@ class UserManager(
             authManager = dm.authManager
         )
     }
-
-    /**
-     * Load user data from backend and initialize UserManager
-     */
-    suspend fun initializeUserData(): Pair<Boolean, String?> {
-        val result = fetchUserData()
-        return when (result) {
-            is FetchUserDataResult.Success -> {
-                userData = result.data
-                Pair(true, null)
-            }
-            is FetchUserDataResult.Error -> Pair(false, result.message)
-        }
-    }
-
-    /**
-     * Get the sanitized user data as a JSON string (for debugging or serialization)
-     */
-    fun getSanitizedUserDataJson(): String? {
-        return getUserData()?.let { Gson().toJson(it) }
-    }
-
-    /**
-     * Get the full user data as a JSON string (be cautious with sensitive info)
-     */
-    fun getAllUserDataJson(): String? {
-        return getAllUserData()?.let { Gson().toJson(it) }
-    }
 }

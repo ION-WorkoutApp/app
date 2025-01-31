@@ -52,6 +52,7 @@ import com.ion606.workoutapp.dataObjects.ExercisePickerState
 import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
 import com.ion606.workoutapp.dataObjects.rememberExercisePickerState
 import com.ion606.workoutapp.helpers.Listeners.Companion.LazyColumnWithBottomDetection
+import com.ion606.workoutapp.helpers.UnitConverters
 import com.ion606.workoutapp.helpers.sortBySimilarityOrDefault
 import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.CoroutineScope
@@ -65,7 +66,9 @@ private const val TAG = "ExercisePopup"
 
 
 // TODO: come up with a better way to give rep/set recommendations
-fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<SuperSet> {
+fun exercisesToActiveExercises(
+    checkedExercises: List<Exercise>, userManager: UserManager
+): List<SuperSet> {
     val setsCount = 5
     val inset = (Array(setsCount) { 0 }).mapIndexed() { _, i ->
         ExerciseSetDataObj(i)
@@ -74,23 +77,25 @@ fun exercisesToActiveExercises(checkedExercises: List<Exercise>): List<SuperSet>
         ExerciseSetDataObj(i)
     }
 
-    return checkedExercises.map {
-        Log.d("ADDING ACTIVE EXERCISE", it.toString());
+    return checkedExercises.map { checkedExercise ->
+        Log.d("ADDING ACTIVE EXERCISE", checkedExercise.toString());
 
         SuperSet(exercises = SnapshotStateList<ActiveExercise>().apply {
-            add(
-                ActiveExercise(
-                    exercise = it,
-                    sets = setsCount,
-                    setsDone = 0,
-                    inset = inset.map { subset ->
-                        if (it.measureType == ExerciseMeasureType.DISTANCE_BASED) {
-                            subset.copy(id = UUID.randomUUID().toString(), distance = 0)
-                        }
-                        else subset.copy(id = UUID.randomUUID().toString())
-                    }.toMutableList(),
-                    weight = weightsList.map { it.copy(id = UUID.randomUUID().toString()) }.toMutableList()
-                )
+            add(UnitConverters.convert(ActiveExercise(exercise = checkedExercise,
+                sets = setsCount,
+                setsDone = 0,
+                inset = inset.map { subset ->
+                    if (checkedExercise.measureType == ExerciseMeasureType.DISTANCE_BASED) {
+                        subset.copy(id = UUID.randomUUID().toString(), distance = 0)
+                    } else subset.copy(id = UUID.randomUUID().toString())
+                }.toMutableList(),
+                weight = weightsList.map { newSuperset ->
+                    newSuperset.copy(
+                        id = UUID.randomUUID().toString()
+                    )
+                }.toMutableList()
+            ), userManager
+            )
             )
         })
     }
@@ -173,7 +178,9 @@ class ExercisePickerPopup {
                     ) {
                         Button(onClick = {
                             //  Add checked exercises to the activity list
-                            val toAdd = exercisesToActiveExercises(state.checkedExercises.toList());
+                            val toAdd = exercisesToActiveExercises(
+                                state.checkedExercises.toList(), userManager
+                            );
 
                             coroutineScope.launch {
                                 dao.insertAll(toAdd)
@@ -201,7 +208,8 @@ class ExercisePickerPopup {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Search Bar for Exercises
-                    TextField(value = state.searchQuery.value,
+                    TextField(
+                        value = state.searchQuery.value,
                         maxLines = 1,
                         onValueChange = {
                             state.searchQuery.value = it

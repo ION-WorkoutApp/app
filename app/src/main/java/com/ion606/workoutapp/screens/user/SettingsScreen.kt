@@ -13,11 +13,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.CenterAlignedTopAppBar as TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ion606.workoutapp.screens.WorkoutBottomBar
+import androidx.compose.material3.CenterAlignedTopAppBar as TopAppBar
 
 
 sealed class Screen(val route: String) {
@@ -60,6 +61,9 @@ fun MasterSettingsScreen(navController: NavController) {
                 title = { Text("Settings") }
             )
         },
+        bottomBar = {
+            WorkoutBottomBar(navController, 2)
+        },
         content = { innerPadding ->
             LazyColumn(
                 modifier = Modifier
@@ -97,7 +101,7 @@ fun MasterSettingsScreen(navController: NavController) {
                     SettingsItem(
                         title = "Danger Zone",
                         onClick = { navController.navigate(Screen.DangerZone.route) },
-                        isDangerZone = true // Pass a flag to style it differently if needed
+                        isDangerZone = true
                     )
                 }
             }

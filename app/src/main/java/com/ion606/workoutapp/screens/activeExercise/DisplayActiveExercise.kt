@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -61,7 +63,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,6 +77,7 @@ import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.logic.StartTimer
+import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -119,8 +121,7 @@ class DisplayActiveExercise {
                 "Set Timer"
             }
 
-            StartTimer(
-                headerText = timerTitle,
+            StartTimer(headerText = timerTitle,
                 remainingTime = timerSetr.value!!.value,
                 onFinishCB = { didFinish ->
                     if (didFinish) {
@@ -134,8 +135,7 @@ class DisplayActiveExercise {
                         )
                     }
                     cb(didFinish)
-                }
-            )
+                })
         }
 
         @SuppressLint("MutableCollectionMutableState", "UnusedContentLambdaTargetStateParameter")
@@ -146,6 +146,7 @@ class DisplayActiveExercise {
             currentSuperset: State<SuperSet?>,
             context: Context,
             nhelper: NotificationManager,
+            userManager: UserManager,
             advanceToNextExercise: (ActiveExercise?, SuperSet) -> Unit
         ) {
             val exercise = activeExercise.value ?: return
@@ -155,10 +156,6 @@ class DisplayActiveExercise {
 
             // show/hide expanded info
             val isInfoExpanded = remember { mutableStateOf(false) }
-            val animatedHeight: Dp by animateDpAsState(
-                targetValue = if (isInfoExpanded.value) 200.dp else 0.dp,
-                label = "animatedHeight${exercise.exercise.exerciseId}"
-            )
 
             // timers & rest
             val timerSetr = remember { mutableStateOf<ExerciseSetDataObj?>(null) }
@@ -167,6 +164,10 @@ class DisplayActiveExercise {
             val restTimer = remember { mutableIntStateOf(0) }
             val isTimerVisible = remember { mutableStateOf(false) }
             val currentSetTime = remember { mutableIntStateOf(0) }
+
+            // units
+            val userWeightUnit = userManager.getUserData()?.weightUnit ?: "lbs"
+            val userDistanceUnit = userManager.getUserData()?.distanceUnit ?: "km"
 
             // items in the LazyColumn
             val itemList = remember { mutableStateListOf<ExerciseSetDataObj>() }
@@ -244,7 +245,13 @@ class DisplayActiveExercise {
                             timerSetr.value = null
                             secondaryTimerSetr.value = null
                             isTimerVisible.value = false
-                            logSet(superset, restTimer, exercise, triggerExerciseSave, advanceToNextExercise)
+                            logSet(
+                                superset,
+                                restTimer,
+                                exercise,
+                                triggerExerciseSave,
+                                advanceToNextExercise
+                            )
                         }
                     }
                 }
@@ -256,15 +263,20 @@ class DisplayActiveExercise {
                             secondaryTimerSetr.value = null
                             timerSetr.value = null
                             isTimerVisible.value = false
-                            logSet(superset, restTimer, exercise, triggerExerciseSave, advanceToNextExercise)
+                            logSet(
+                                superset,
+                                restTimer,
+                                exercise,
+                                triggerExerciseSave,
+                                advanceToNextExercise
+                            )
                         }
                     }
                 }
 
             } else if (restTimer.intValue > 0) {
                 // show rest timer if needed
-                StartTimer(
-                    headerText = "Rest Timer",
+                StartTimer(headerText = "Rest Timer",
                     remainingTime = restTimer.intValue,
                     onFinishCB = { didFinish ->
                         if (!didFinish) return@StartTimer
@@ -281,16 +293,11 @@ class DisplayActiveExercise {
                         )
 
                         goToNextExercise(
-                            superset,
-                            restTimer,
-                            exercise,
-                            { ae, sup ->
+                            superset, restTimer, exercise, { ae, sup ->
                                 triggerExerciseSave(ae, sup, false)
-                            },
-                            advanceToNextExercise
+                            }, advanceToNextExercise
                         )
-                    }
-                )
+                    })
             }
             // endregion
 
@@ -316,11 +323,9 @@ class DisplayActiveExercise {
                             .fillMaxWidth()
                             .align(Alignment.Start)
                     ) {
-                        IconButton(
-                            onClick = {
-                                triggerExerciseSave(exercise, superset, true)
-                            }
-                        ) {
+                        IconButton(onClick = {
+                            triggerExerciseSave(exercise, superset, true)
+                        }) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBackIosNew,
                                 contentDescription = "Go Back",
@@ -363,11 +368,8 @@ class DisplayActiveExercise {
                     }
 
                     Text(
-                        text = exercise.exercise.title,
-                        style = TextStyle(
-                            color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
+                        text = exercise.exercise.title, style = TextStyle(
+                            color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold
                         )
                     )
 
@@ -383,20 +385,31 @@ class DisplayActiveExercise {
                     }
 
                     // expanded info
-                    Box(
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(animatedHeight)
-                            .background(Color(0xFF1E1E1E))
-                            .padding(10.dp)
-                    ) {
-                        Text(
-                            text = exercise.exercise.description,
-                            style = TextStyle(
-                                color = Color.Gray,
-                                fontSize = 16.sp
+                            .animateContentSize(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
                             )
-                        )
+                            .background(Color(0xFF1E1E1E))
+                    ) {
+                        if (isInfoExpanded.value) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .background(Color.Transparent)
+                            ) {
+                                Text(
+                                    modifier = Modifier.background(Color.Transparent),
+                                    text = exercise.exercise.description, style = TextStyle(
+                                        color = Color.LightGray, fontSize = 16.sp, lineHeight = 25.sp
+                                    )
+                                )
+                            }
+                        }
                     }
 
                     // region: sets list
@@ -407,10 +420,7 @@ class DisplayActiveExercise {
                             .fillMaxWidth()
                             .weight(1f)
                     ) {
-                        itemsIndexed(
-                            items = itemList,
-                            key = { _, item -> item.id }
-                        ) { i, setItem ->
+                        itemsIndexed(items = itemList, key = { _, item -> item.id }) { i, setItem ->
                             var isVisible by remember { mutableStateOf(true) }
                             var editingTimer by remember { mutableStateOf(false) }
                             var restTimeStr by remember { mutableIntStateOf(setItem.restTime) }
@@ -436,8 +446,7 @@ class DisplayActiveExercise {
                                                 .padding(start = 10.dp, bottom = 13.dp)
                                                 .align(Alignment.CenterVertically)
                                         )
-                                        Text(
-                                            text = "${convertSecondsToTimeString(restTimeStr)} rest",
+                                        Text(text = "${convertSecondsToTimeString(restTimeStr)} rest",
                                             color = Color.White,
                                             modifier = Modifier
                                                 .padding(start = 5.dp, bottom = 0.dp)
@@ -447,8 +456,7 @@ class DisplayActiveExercise {
                                                     if (restTimer.intValue <= 0) {
                                                         editingTimer = true
                                                     }
-                                                }
-                                        )
+                                                })
                                     }
                                 } else {
                                     // user wants to edit rest time
@@ -481,15 +489,13 @@ class DisplayActiveExercise {
                                         .padding(0.dp, top = 30.dp)
                                 ) {
                                     var xOffset by remember { mutableStateOf(0f) }
-                                    val animatedXOffset by animateFloatAsState(
-                                        targetValue = xOffset,
+                                    val animatedXOffset by animateFloatAsState(targetValue = xOffset,
                                         animationSpec = tween(300),
                                         finishedListener = {
                                             if (xOffset >= CENTER_RAD) {
                                                 isVisible = false
                                             }
-                                        }
-                                    )
+                                        })
 
                                     if (!isVisible) {
                                         // remove item after anim
@@ -524,32 +530,27 @@ class DisplayActiveExercise {
                                     }
 
                                     // the foreground card
-                                    Card(
-                                        modifier = Modifier
-                                            .zIndex(1f)
-                                            .offset { IntOffset(animatedXOffset.roundToInt(), 0) }
-                                            .fillMaxWidth()
-                                            .pointerInput(Unit) {
-                                                if (!setItem.isDone) {
-                                                    detectHorizontalDragGestures(
-                                                        onHorizontalDrag = { change, dragAmount ->
-                                                            change.consume()
-                                                            xOffset += dragAmount
-                                                        },
-                                                        onDragEnd = {
-                                                            xOffset = if (xOffset > CENTER_RAD) {
-                                                                10000f
-                                                            } else {
-                                                                0f
-                                                            }
-                                                        }
-                                                    )
-                                                }
-                                            },
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = if (setItem.isDone) Color.DarkGray
-                                            else Color(0xFF1E1E1E)
-                                        )
+                                    Card(modifier = Modifier
+                                        .zIndex(1f)
+                                        .offset { IntOffset(animatedXOffset.roundToInt(), 0) }
+                                        .fillMaxWidth()
+                                        .pointerInput(Unit) {
+                                            if (!setItem.isDone) {
+                                                detectHorizontalDragGestures(onHorizontalDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    xOffset += dragAmount
+                                                }, onDragEnd = {
+                                                    xOffset = if (xOffset > CENTER_RAD) {
+                                                        10000f
+                                                    } else {
+                                                        0f
+                                                    }
+                                                })
+                                            }
+                                        }, colors = CardDefaults.cardColors(
+                                        containerColor = if (setItem.isDone) Color.DarkGray
+                                        else Color(0xFF1E1E1E)
+                                    )
                                     ) {
                                         Row(
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -565,33 +566,37 @@ class DisplayActiveExercise {
                                             // 2) time-based
                                             // 3) rep-based
                                             when (exercise.exercise.measureType) {
-                                                ExerciseMeasureType.DISTANCE_BASED -> {
-                                                    /*
+                                                ExerciseMeasureType.DISTANCE_BASED -> {/*
                                                       if distance is stored in 'setItem.distance':
                                                       show an InputField for distance,
                                                       ignoring 'value' or letting it remain 0
                                                     */
-                                                    InputField(
-                                                        value = setItem.distance?.toString() ?: "",
-                                                        label = "Distance (m)",
+                                                    InputField(value = setItem.distance?.toString()
+                                                        ?: "",
+                                                        label = "Distance ($userDistanceUnit)",
                                                         modifier = Modifier
                                                             .weight(1f)
                                                             .align(Alignment.CenterVertically),
                                                         enabled = !setItem.isDone,
                                                         onChange = { newVal ->
                                                             val newDist = stringToInt(newVal)
-                                                            itemList[i] = setItem.copy(distance = newDist)
+                                                            itemList[i] =
+                                                                setItem.copy(distance = newDist)
                                                             exercise.inset = itemList
-                                                            triggerExerciseSave(exercise, superset, false)
-                                                        }
-                                                    )
+                                                            triggerExerciseSave(
+                                                                exercise, superset, false
+                                                            )
+                                                        })
                                                 }
 
                                                 // time-based or rep-based is decided by the helper function
                                                 else -> {
                                                     if (ExerciseMeasureType.useTime(exercise.exercise.measureType)) {
                                                         // show time input
-                                                        val t = convertSecondsToTimeString(setItem.value).split(":")
+                                                        val t =
+                                                            convertSecondsToTimeString(setItem.value).split(
+                                                                ":"
+                                                            )
                                                         Column(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
@@ -605,21 +610,29 @@ class DisplayActiveExercise {
                                                                 verticalAlignment = Alignment.CenterVertically,
                                                                 horizontalArrangement = Arrangement.Center
                                                             ) {
-                                                                InputFieldCompact(
-                                                                    value = t[0],
+                                                                InputFieldCompact(value = t[0],
                                                                     label = "MM",
                                                                     modifier = Modifier
                                                                         .weight(1f)
                                                                         .fillMaxHeight(),
                                                                     enabled = !setItem.isDone,
                                                                     onChange = { mmStr ->
-                                                                        if (mmStr.trim().isEmpty()) return@InputFieldCompact
-                                                                        val newTime = (stringToInt(mmStr) * 60) + stringToInt(t[1])
-                                                                        itemList[i] = setItem.copy(value = newTime)
+                                                                        if (mmStr.trim()
+                                                                                .isEmpty()
+                                                                        ) return@InputFieldCompact
+                                                                        val newTime =
+                                                                            (stringToInt(mmStr) * 60) + stringToInt(
+                                                                                t[1]
+                                                                            )
+                                                                        itemList[i] =
+                                                                            setItem.copy(value = newTime)
                                                                         exercise.inset = itemList
-                                                                        triggerExerciseSave(exercise, superset, false)
-                                                                    }
-                                                                )
+                                                                        triggerExerciseSave(
+                                                                            exercise,
+                                                                            superset,
+                                                                            false
+                                                                        )
+                                                                    })
                                                                 if (exercise.exercise.perSide) {
                                                                     Column(
                                                                         horizontalAlignment = Alignment.CenterHorizontally
@@ -631,13 +644,21 @@ class DisplayActiveExercise {
                                                                                 fontSize = 14.sp,
                                                                                 fontStyle = FontStyle.Italic
                                                                             ),
-                                                                            modifier = Modifier
-                                                                                .padding(top = 0.dp, bottom = 0.dp)
+                                                                            modifier = Modifier.padding(
+                                                                                top = 0.dp,
+                                                                                bottom = 0.dp
+                                                                            )
                                                                         )
-                                                                        Spacer(modifier = Modifier.height(22.dp))
+                                                                        Spacer(
+                                                                            modifier = Modifier.height(
+                                                                                22.dp
+                                                                            )
+                                                                        )
                                                                         Text(
                                                                             text = ":",
-                                                                            modifier = Modifier.padding(horizontal = 8.dp),
+                                                                            modifier = Modifier.padding(
+                                                                                horizontal = 8.dp
+                                                                            ),
                                                                             style = TextStyle(
                                                                                 color = if (setItem.isDone) Color.Gray
                                                                                 else Color.White,
@@ -648,7 +669,9 @@ class DisplayActiveExercise {
                                                                 } else {
                                                                     Text(
                                                                         text = ":",
-                                                                        modifier = Modifier.padding(horizontal = 8.dp),
+                                                                        modifier = Modifier.padding(
+                                                                            horizontal = 8.dp
+                                                                        ),
                                                                         style = TextStyle(
                                                                             color = if (setItem.isDone) Color.Gray
                                                                             else Color.White,
@@ -656,40 +679,52 @@ class DisplayActiveExercise {
                                                                         )
                                                                     )
                                                                 }
-                                                                InputFieldCompact(
-                                                                    value = t[1],
+                                                                InputFieldCompact(value = t[1],
                                                                     label = "SS",
                                                                     modifier = Modifier
                                                                         .weight(1f)
                                                                         .fillMaxHeight(),
                                                                     enabled = !setItem.isDone,
                                                                     onChange = { ssStr ->
-                                                                        if (ssStr.trim().isEmpty()) return@InputFieldCompact
-                                                                        val newTime = stringToInt(ssStr) + (stringToInt(t[0]) * 60)
-                                                                        itemList[i] = setItem.copy(value = newTime)
+                                                                        if (ssStr.trim()
+                                                                                .isEmpty()
+                                                                        ) return@InputFieldCompact
+                                                                        val newTime =
+                                                                            stringToInt(ssStr) + (stringToInt(
+                                                                                t[0]
+                                                                            ) * 60)
+                                                                        itemList[i] =
+                                                                            setItem.copy(value = newTime)
                                                                         exercise.inset = itemList
-                                                                        triggerExerciseSave(exercise, superset, false)
-                                                                    }
-                                                                )
+                                                                        triggerExerciseSave(
+                                                                            exercise,
+                                                                            superset,
+                                                                            false
+                                                                        )
+                                                                    })
                                                             }
                                                         }
                                                     } else {
                                                         // rep-based
-                                                        InputField(
-                                                            value = setItem.value.toString(),
+                                                        InputField(value = setItem.value.toString(),
                                                             label = "Reps",
                                                             modifier = Modifier
                                                                 .weight(1f)
                                                                 .align(Alignment.CenterVertically),
                                                             enabled = !setItem.isDone,
                                                             onChange = { newVal ->
-                                                                if (newVal.trim().isEmpty()) return@InputField
-                                                                val updatedReps = stringToInt(newVal)
-                                                                itemList[i] = setItem.copy(value = updatedReps)
+                                                                if (newVal.trim()
+                                                                        .isEmpty()
+                                                                ) return@InputField
+                                                                val updatedReps =
+                                                                    stringToInt(newVal)
+                                                                itemList[i] =
+                                                                    setItem.copy(value = updatedReps)
                                                                 exercise.inset = itemList
-                                                                triggerExerciseSave(exercise, superset, false)
-                                                            }
-                                                        )
+                                                                triggerExerciseSave(
+                                                                    exercise, superset, false
+                                                                )
+                                                            })
                                                     }
                                                 }
                                             }
@@ -698,24 +733,24 @@ class DisplayActiveExercise {
                                             Spacer(modifier = Modifier.width(16.dp))
 
                                             // region: weight input
-                                            InputField(
-                                                value = exercise.weight?.getOrNull(
-                                                    itemList.indexOf(setItem)
-                                                )?.value?.toString() ?: "",
-                                                label = "Weight (lbs)",
+                                            InputField(value = exercise.weight?.getOrNull(
+                                                itemList.indexOf(setItem)
+                                            )?.value?.toString() ?: "",
+                                                label = "Weight (${userWeightUnit})",
                                                 modifier = Modifier.weight(1f),
                                                 enabled = !setItem.isDone,
                                                 onChange = { newVal ->
                                                     if (newVal.trim().isEmpty()) return@InputField
                                                     val updatedWeight = stringToInt(newVal)
                                                     // update weight array at same index
-                                                    exercise.weight = exercise.weight?.toMutableList()?.apply {
-                                                        val idx = itemList.indexOf(setItem)
-                                                        this[idx] = ExerciseSetDataObj(updatedWeight)
-                                                    }
+                                                    exercise.weight =
+                                                        exercise.weight?.toMutableList()?.apply {
+                                                            val idx = itemList.indexOf(setItem)
+                                                            this[idx] =
+                                                                ExerciseSetDataObj(updatedWeight)
+                                                        }
                                                     triggerExerciseSave(exercise, superset, false)
-                                                }
-                                            )
+                                                })
                                             // endregion
                                         }
                                     }
@@ -738,16 +773,14 @@ class DisplayActiveExercise {
                     ) {
                         // time-based start
                         if (ExerciseMeasureType.useTime(exercise.exercise.measureType)) {
-                            Button(
-                                onClick = {
-                                    val nextUndoneSet = itemList.find { !it.isDone }
-                                    if (nextUndoneSet == null || nextUndoneSet.value <= 0) {
-                                        showAlert.value = true
-                                        return@Button
-                                    }
-                                    timerSetr.value = nextUndoneSet
+                            Button(onClick = {
+                                val nextUndoneSet = itemList.find { !it.isDone }
+                                if (nextUndoneSet == null || nextUndoneSet.value <= 0) {
+                                    showAlert.value = true
+                                    return@Button
                                 }
-                            ) {
+                                timerSetr.value = nextUndoneSet
+                            }) {
                                 Image(
                                     imageVector = Icons.Default.Timer,
                                     contentDescription = "Start Timer"
@@ -759,9 +792,17 @@ class DisplayActiveExercise {
                         if (!exercise.isDone) {
                             Button(
                                 onClick = {
-                                    logSet(superset, restTimer, exercise, triggerExerciseSave, advanceToNextExercise)
+                                    logSet(
+                                        superset,
+                                        restTimer,
+                                        exercise,
+                                        triggerExerciseSave,
+                                        advanceToNextExercise
+                                    )
                                 },
-                                modifier = Modifier.align(Alignment.Bottom).padding(start = 10.dp)
+                                modifier = Modifier
+                                    .align(Alignment.Bottom)
+                                    .padding(start = 10.dp)
                             ) {
                                 Text(text = "Log Set", color = Color.White)
                             }
@@ -781,9 +822,8 @@ class DisplayActiveExercise {
             triggerExerciseSave: (ActiveExercise, SuperSet, Boolean) -> Unit,
             advanceToNextExercise: (ActiveExercise?, SuperSet) -> Unit
         ) {
-            if (
-                currentSuperset.isOnLastExercise() &&
-                (currentSuperset.getCurrentExercise()?.restTime ?: 0) > 0
+            if (currentSuperset.isOnLastExercise() && (currentSuperset.getCurrentExercise()?.restTime
+                    ?: 0) > 0
             ) {
                 restTimer.intValue = currentSuperset.getCurrentExercise()?.restTime ?: 0
             } else {

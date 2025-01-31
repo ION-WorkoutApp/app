@@ -58,6 +58,7 @@ import com.ion606.workoutapp.dataObjects.WorkoutViewModelFactory
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.Alerts.Companion.CreateAlertDialog
 import com.ion606.workoutapp.helpers.NotificationManager
+import com.ion606.workoutapp.helpers.UnitConverters
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
@@ -198,8 +199,7 @@ class ExerciseScreen {
                             val r = syncManager.sendData(
                                 mapOf(
                                     "workout" to mapOf(
-                                        "supersets" to dao.getAll(),
-                                        "totalTime" to 0
+                                        "supersets" to dao.getAll(), "totalTime" to 0
                                     ), "workoutname" to workoutName.toString()
                                 ), path = "workouts/savedworkouts"
                             )
@@ -236,9 +236,13 @@ class ExerciseScreen {
                         }
 
                         val toSend = mapOf(
-                            "supersets" to exercises,
-                            "totalTime" to totalTime,
-                            "workoutTime" to workoutTime.time
+                            "supersets" to exercises.map {
+                                it.copy(exercises = it.exercises.map { e ->
+                                    UnitConverters.convertBack(
+                                        e, userManager
+                                    )
+                                }.toMutableList())
+                            }, "totalTime" to totalTime, "workoutTime" to workoutTime.time
                         )
                         Log.d("SAVING", toSend.toString())
                         val r = syncManager.sendData(toSend, path = "workouts/workout")
@@ -324,7 +328,11 @@ class ExerciseScreen {
                                     DropdownMenuItem(onClick = {
                                         saveWorkout = true
                                         expandDropdown.value = false
-                                    }, text = { Text("Add to Saved Workouts", color = Color.White) })
+                                    }, text = {
+                                        Text(
+                                            "Add to Saved Workouts", color = Color.White
+                                        )
+                                    })
 
                                     DropdownMenuItem(onClick = {
                                         endWorkout.intValue = 1
@@ -474,6 +482,7 @@ class ExerciseScreen {
                                 if (exitScreen) workoutViewModel.clearCurrentExercise()
                             }
                         },
+                        userManager = userManager,
                         advanceToNextExercise = { nextExercise: ActiveExercise?, superset: SuperSet ->
                             // if the current exercise is completed, mark it as done
                             if (currentExercise.value!!.isDone) {

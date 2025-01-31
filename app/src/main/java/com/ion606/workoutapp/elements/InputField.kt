@@ -91,6 +91,7 @@ fun InputField(
                     shape = MaterialTheme.shapes.medium
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
+            maxLines = 1,
             textStyle = TextStyle(
                 color = if (enabled) Color.White else Color.Gray, // Dim text color if disabled
                 fontSize = 20.sp,
@@ -169,6 +170,7 @@ fun InputFieldCompact(
                 fontSize = 20.sp,
                 textAlign = TextAlign.Center
             ),
+            maxLines = 1,
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = kbt),
             enabled = enabled // Disables input if not enabled
         )

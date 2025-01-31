@@ -17,7 +17,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.CenterAlignedTopAppBar as TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,10 +29,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.dataObjects.User.SanitizedUserDataObj
-import com.ion606.workoutapp.elements.DropdownMenuField
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.launch
+import androidx.compose.material3.CenterAlignedTopAppBar as TopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,16 +50,8 @@ fun PersonalInfoScreen(
     var gender by remember { mutableStateOf(user.gender) }
     var height by remember { mutableStateOf(user.height.toString()) }
     var weight by remember { mutableStateOf(user.weight.toString()) }
-    var weightUnit by remember { mutableStateOf(user.weightUnit) }
-    var distanceUnit by remember { mutableStateOf(user.distanceUnit) }
-    var fitnessGoal by remember { mutableStateOf(user.fitnessGoal) }
-    var preferredWorkoutType by remember { mutableStateOf(user.preferredWorkoutType) }
-    var comfortLevel by remember { mutableStateOf(user.comfortLevel) }
 
     val alertmsg = remember { mutableStateOf(Pair<String, String?>("", "")) }
-
-    val weightUnits = listOf("kg", "lbs")
-    val distanceUnits = listOf("km", "miles")
 
     if (alertmsg.value.first.isNotEmpty()) {
         Alerts.ShowAlert(
@@ -131,35 +122,9 @@ fun PersonalInfoScreen(
             OutlinedTextField(
                 value = weight,
                 onValueChange = { weight = it },
-                label = { Text("Weight") },
+                label = { Text("Weight (in ${user.weightUnit})") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            DropdownMenuField(label = "Weight Unit",
-                options = weightUnits,
-                value = weightUnit,
-                onValueChange = { weightUnit = it })
-            DropdownMenuField(label = "Distance Unit",
-                options = distanceUnits,
-                value = distanceUnit,
-                onValueChange = { distanceUnit = it })
-            OutlinedTextField(
-                value = fitnessGoal,
-                onValueChange = { fitnessGoal = it },
-                label = { Text("Fitness Goal") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = preferredWorkoutType,
-                onValueChange = { preferredWorkoutType = it },
-                label = { Text("Preferred Workout Type") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = comfortLevel,
-                onValueChange = { comfortLevel = it },
-                label = { Text("Comfort Level") },
-                modifier = Modifier.fillMaxWidth()
             )
 
             Button(
@@ -187,12 +152,7 @@ fun PersonalInfoScreen(
                                     age = ageInt,
                                     gender = gender,
                                     height = heightInt,
-                                    weight = weightInt,
-                                    weightUnit = weightUnit,
-                                    distanceUnit = distanceUnit,
-                                    fitnessGoal = fitnessGoal,
-                                    preferredWorkoutType = preferredWorkoutType,
-                                    comfortLevel = comfortLevel
+                                    weight = weightInt
                                 )
                             )
                         )
