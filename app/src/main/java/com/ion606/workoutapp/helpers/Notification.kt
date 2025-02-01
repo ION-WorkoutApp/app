@@ -125,7 +125,8 @@ class NotificationManager(private val context: Context) {
         actionName: String = "OPEN_APP",
         iconResId: Int = R.drawable.ic_app_icon,
         actions: List<NotificationCompat.Action> = emptyList(),
-        intents: List<Pair<String, String>> = emptyList()
+        intents: List<Pair<String, String>> = emptyList(),
+        idleOnly: Boolean = false
     ) {
         // Check for POST_NOTIFICATIONS permission (Android 13+).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ActivityCompat.checkSelfPermission(
@@ -212,24 +213,18 @@ fun TopScreenMessageText(
     var containerWidth by remember { mutableStateOf(0) }
 
     // Measure the text width and container width
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .onGloballyPositioned { layoutCoordinates ->
+            containerWidth = layoutCoordinates.size.width
+        }) {
+        Box(modifier = Modifier
             .onGloballyPositioned { layoutCoordinates ->
-                containerWidth = layoutCoordinates.size.width
+                textWidth = layoutCoordinates.size.width
             }
-    ) {
-        Box(
-            modifier = Modifier
-                .onGloballyPositioned { layoutCoordinates ->
-                    textWidth = layoutCoordinates.size.width
-                }
-                .offset { IntOffset(x = 0, y = 0) }
-        ) {
+            .offset { IntOffset(x = 0, y = 0) }) {
             Text(
-                text = text,
-                color = Color.Transparent,
-                style = MaterialTheme.typography.bodyMedium
+                text = text, color = Color.Transparent, style = MaterialTheme.typography.bodyMedium
             )
         }
     }
@@ -257,12 +252,9 @@ fun TopScreenMessageText(
             .background(Color.Red)
             .padding(top = 20.dp)
     ) {
-        Text(
-            text = text,
+        Text(text = text,
             color = color,
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
-                .offset { IntOffset(animX.toInt(), 0) }
-        )
+            modifier = Modifier.offset { IntOffset(animX.toInt(), 0) })
     }
 }

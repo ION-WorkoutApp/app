@@ -23,32 +23,32 @@ import androidx.compose.material3.CenterAlignedTopAppBar as TopAppBar
 
 sealed class Screen(val route: String) {
     // Settings Screens
-    object MasterSettings : Screen("master_settings")
-    object PersonalInfo : Screen("personal_info")
-    object GeneralPreferences : Screen("general_preferences")
-    object ProgressTracking : Screen("progress_tracking")
-    object Notifications : Screen("notifications")
-    object SocialPreferences : Screen("social_preferences")
-    object DangerZone : Screen("danger_zone")
+    data object MasterSettings : Screen("master_settings")
+    data object PersonalInfo : Screen("personal_info")
+    data object GeneralPreferences : Screen("general_preferences")
+    data object ProgressTracking : Screen("progress_tracking")
+    data object Notifications : Screen("notifications")
+    data object SocialPreferences : Screen("social_preferences")
+    data object DangerZone : Screen("danger_zone")
 
     // Main Application Screens
-    object Home : Screen("home")
-    object Details : Screen("details")
-    object LoginSignup : Screen("login_signup")
-    object Signup : Screen("signup")
-    object PermissionsRedirect : Screen("permissionsredirect")
-    object Login : Screen("login")
-    object Workout : Screen("workout")
-    object ActiveWorkout : Screen("active_workout")
-    object RestartApp : Screen("restart_app")
-    object ExitApp : Screen("exit_app")
-    object Log : Screen("log")
-    object Profile : Screen("profile")
-    object Permissions : Screen("permissions")
-    object AccountSettings : Screen("accountSettings")
+    data object Home : Screen("home")
+    data object Details : Screen("details")
+    data object LoginSignup : Screen("login_signup")
+    data object Signup : Screen("signup")
+    data object PermissionsRedirect : Screen("permissionsredirect")
+    data object Login : Screen("login")
+    data object Workout : Screen("workout")
+    data object ActiveWorkout : Screen("active_workout")
+    data object RestartApp : Screen("restart_app")
+    data object ExitApp : Screen("exit_app")
+    data object Log : Screen("log")
+    data object Profile : Screen("profile")
+    data object Permissions : Screen("permissions")
+    data object AccountSettings : Screen("accountSettings")
 
     // Fallback Route
-    object NotFound : Screen("not_found")
+    data object NotFound : Screen("not_found")
 }
 
 

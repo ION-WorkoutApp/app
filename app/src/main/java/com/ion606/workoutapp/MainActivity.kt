@@ -19,21 +19,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import androidx.work.WorkManager
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.CheckIfInDebugMode
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.TopScreenMessageText
+import com.ion606.workoutapp.helpers.scheduleWorkoutReminder
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.PermissionsManager
 import com.ion606.workoutapp.screens.SettingsNavGraph
 import com.ion606.workoutapp.screens.activeExercise.WorkoutDatabase
+import com.ion606.workoutapp.screens.user.Screen
 import com.ion606.workoutapp.ui.theme.WorkoutAppTheme
 
 
 class MainActivity : ComponentActivity() {
+    private val nvc = mutableStateOf<NavHostController?>(null)
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @SuppressLint("UnsafeIntentLaunch")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,11 +58,14 @@ class MainActivity : ComponentActivity() {
         val nhelper = NotificationManager(this@MainActivity);
         val permissions = PermissionsManager();
 
+        scheduleWorkoutReminder(this@MainActivity)
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             WorkoutAppTheme {
                 val navController = rememberNavController()
+                this.nvc.value = navController
 
                 val runDebugChecks = remember { mutableStateOf(false) };
                 val serverInDebugMode = remember { mutableStateOf(false) };
@@ -86,9 +95,22 @@ class MainActivity : ComponentActivity() {
                     if (serverInDebugMode.value) TopScreenMessageText("Server is in debug mode - your data is unencrypted!")
                 }) { innerPadding ->
                     SettingsNavGraph(navController, userManager, innerPadding, dataManager, sm, permissions, dao, nhelper, runDebugChecks, this@MainActivity)
-
                 }
             }
         }
     }
+
+    override fun onStop() {
+        super.onStop();
+
+        val shouldPing = (this.nvc.value?.currentDestination?.route == Screen.Workout.route || this.nvc.value?.currentDestination?.route == Screen.ActiveWorkout.route);
+        if (shouldPing) {
+            scheduleWorkoutReminder(this@MainActivity)
+        }
+    };
+
+    override fun onStart() {
+        super.onStart();
+        WorkManager.getInstance(this@MainActivity).cancelUniqueWork("WorkoutReminder")
+    };
 }

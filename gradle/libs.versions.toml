@@ -10,6 +10,8 @@ espressoCoreVersion = "3.6.1"
 espressoIntents = "3.0.2"
 gson = "2.11.0"
 gsonVersion = "2.11.0"
+guava = "31.0.1-android"
+guavaVersion = "29.0-android"
 kotlin = "2.0.0"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -45,6 +47,7 @@ junitKtx = "1.2.1"
 coreKtxVersion = "1.6.1"
 securityCryptoKtx = "1.0.0"
 roomKtxVersion = "2.7.0-alpha12"
+workTesting = "2.10.0"
 
 [libraries]
 androidx-core = { module = "androidx.test:core", version.ref = "core" }
@@ -63,11 +66,14 @@ androidx-runner = { module = "androidx.test:runner", version.ref = "runner" }
 androidx-security-crypto = { module = "androidx.security:security-crypto" }
 androidx-security-crypto-v100rc02 = { module = "androidx.security:security-crypto", version.ref = "securityCryptoVersion" }
 androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx" }
 byte-buddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byteBuddy" }
 bytebuddy-byte-buddy = { module = "net.bytebuddy:byte-buddy" }
 espresso-intents = { module = "com.android.support.test.espresso:espresso-intents", version.ref = "espressoIntents" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 gson-v289 = { module = "com.google.code.gson:gson", version.ref = "gsonVersion" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+guava-v290android = { module = "com.google.guava:guava", version.ref = "guavaVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -104,6 +110,7 @@ support-annotations = { module = "com.android.support:support-annotations", vers
 androidx-security-crypto-ktx = { group = "androidx.security", name = "security-crypto-ktx", version.ref = "securityCryptoKtx" }
 tink-android = { module = "com.google.crypto.tink:tink-android" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtxVersion" }
+androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "workTesting" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

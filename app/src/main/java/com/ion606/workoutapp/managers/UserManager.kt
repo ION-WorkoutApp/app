@@ -65,9 +65,6 @@ class UserManager(
                 preferences[MINIMALIST_MODE_KEY] ?: false
             }.first()
         }
-
-        // Optionally, load user data from local storage or fetch from backend
-        // loadUserData()
     }
 
     /**
@@ -88,7 +85,7 @@ class UserManager(
         val pageSize: Int
     )
 
-    fun Map<String, String>.toQueryParams(): String {
+    private fun Map<String, String>.toQueryParams(): String {
         return this.entries.filter { it.value.isNotEmpty() }
             .joinToString("&") { "${it.key}=${it.value}" }
     }

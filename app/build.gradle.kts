@@ -56,6 +56,8 @@ android {
 }
 
 dependencies {
+    val work_version = "2.10.0"
+
     implementation(libs.material3)
     implementation(libs.androidx.material)
     implementation(libs.androidx.material.icons.extended)
@@ -81,6 +83,7 @@ dependencies {
     implementation(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.room.ktx)
+    implementation("androidx.work:work-runtime-ktx:$work_version")
     ksp(libs.room.compiler)
     ksp(libs.androidx.room.ktx)
     testImplementation(libs.junit)
@@ -95,6 +98,10 @@ dependencies {
     androidTestImplementation(libs.support.annotations)
     androidTestImplementation(libs.runner)
     androidTestImplementation(libs.rules)
+    testImplementation(libs.androidx.work.testing)
+    testImplementation(libs.androidx.core)
+    androidTestImplementation(libs.guava)
+    implementation(libs.guava.v290android)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

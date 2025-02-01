@@ -138,7 +138,7 @@ fun SettingsNavGraph(
     }
 
     // Handle unknown routes
-    navController.addOnDestinationChangedListener { controller, destination, arguments ->
+    navController.addOnDestinationChangedListener { controller, destination, _ ->
         if (!controller.graph.contains(destination)) controller.navigate(Screen.NotFound.route)
     }
 }
