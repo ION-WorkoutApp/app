@@ -1,5 +1,6 @@
 package com.ion606.workoutapp.dataObjects
 
+import android.util.Log
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Embedded
@@ -54,8 +55,10 @@ data class Exercise(
     val rating: Float,
     val ratingDescription: String,
     val videoPath: String,
+    @TypeConverters(ExerciseMeasureTypeConverter::class)
     val measureType: ExerciseMeasureType,
-    val perSide: Boolean
+    val perSide: Boolean,
+    val met: Float
 )
 
 
@@ -68,16 +71,41 @@ data class ExerciseSetDataObj(
     var restTime: Int = 0
 )
 
-class ExerciseMeasureTypeAdapter : JsonDeserializer<ExerciseMeasureType>, JsonSerializer<ExerciseMeasureType> {
+class ExerciseMeasureTypeAdapter : JsonDeserializer<ExerciseMeasureType>,
+    JsonSerializer<ExerciseMeasureType> {
     override fun deserialize(
         json: JsonElement?,
         typeOfT: Type?,
         context: JsonDeserializationContext?
-    ): ExerciseMeasureType? {
-        return json?.asInt?.let { ExerciseMeasureType.fromValue(it) }
+    ): ExerciseMeasureType {
+        // If the JSON element is null, return a default value.
+        if (json == null) return ExerciseMeasureType.REP_BASED
+
+        val primitive = json.asJsonPrimitive
+        return if (primitive.isNumber) {
+            // If it is a number, use it directly.
+            ExerciseMeasureType.fromValue(primitive.asInt)
+        } else if (primitive.isString) {
+            // Try converting the string to an integer.
+            primitive.asString.toIntOrNull()?.let { intVal ->
+                ExerciseMeasureType.fromValue(intVal)
+            } ?: try {
+                // If it cannot be parsed as an int, assume it's the enum name.
+                ExerciseMeasureType.valueOf(primitive.asString)
+            } catch (e: Exception) {
+                // Default fallback.
+                ExerciseMeasureType.REP_BASED
+            }
+        } else {
+            ExerciseMeasureType.REP_BASED
+        }
     }
 
-    override fun serialize(src: ExerciseMeasureType?, typeOfSrc: Type?, context: JsonSerializationContext?): JsonElement {
+    override fun serialize(
+        src: ExerciseMeasureType?,
+        typeOfSrc: Type?,
+        context: JsonSerializationContext?
+    ): JsonElement {
         return JsonPrimitive(src?.value)
     }
 }
@@ -99,6 +127,7 @@ class ExerciseMeasureTypeConverter {
 
     @TypeConverter
     fun fromExerciseMeasureType(type: ExerciseMeasureType): Int {
+        Log.d("ExerciseMeasureTypeConverter", "fromExerciseMeasureType: ${type.value}")
         return type.value
     }
 
@@ -162,8 +191,27 @@ data class ActiveExercise(
     @TypeConverters(SetListConverter::class) var inset: MutableList<ExerciseSetDataObj>? = null,
     @TypeConverters(SetListConverter::class) var weight: MutableList<ExerciseSetDataObj>? = null,
     var isDone: Boolean = false,
-    var restTime: Int = 0
+    var restTime: Int = 0,
+    var caloriesBurned: Double = 0.0,
+    var duration: Int = 0,
 ) {
+    fun markAsDone(userWeight: Number) {
+        if (this.inset?.sumOf { it.value } == null) {
+            Log.d("ActiveExercise", "Inset is null ${this.inset}")
+            return
+        }
+        val insetSum = this.inset!!.sumOf { it.value };
+
+        if (this.exercise.measureType == ExerciseMeasureType.REP_BASED) {
+            this.caloriesBurned =
+                (this.exercise.met * userWeight.toFloat() * 3.5 * (insetSum * 3 / 60)) / 200
+        } else {
+            this.caloriesBurned = (this.exercise.met * userWeight.toFloat() * 3.5 * insetSum) / 200
+        }
+
+        isDone = true
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

@@ -29,7 +29,7 @@ class DataManager(context: Context, private val sm: SyncManager) {
         return authManager.logout(navController)
     }
 
-    suspend fun createAccount(data: Map<String, String>, baseURL: String): AccountLoginReturnObject {
+    suspend fun createAccount(data: Map<String, Any>, baseURL: String): AccountLoginReturnObject {
         try {
             val (success, message) = sm.sendData(data, "$baseURL/auth/initaccount")
             if (success) {

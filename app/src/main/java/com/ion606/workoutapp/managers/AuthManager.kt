@@ -52,7 +52,7 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
     data class AuthResult(val success: Boolean, val message: String?)
 
     suspend fun login(
-        data: Map<String, String>? = null,
+        data: Map<String, Any>? = null,
         baseURL: String? = null,
         dataManager: DataManager
     ): AuthResult {
@@ -66,7 +66,7 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
             return AuthResult(false, "No token or URL found")
         }
 
-        val credentials: Map<String, String> = data.ifEmpty {
+        val credentials: Map<String, Any> = data.ifEmpty {
             mapOf(
                 "username" to sharedPreferences.getString("username", null).toString(),
                 "password" to sharedPreferences.getString("password", null).toString()

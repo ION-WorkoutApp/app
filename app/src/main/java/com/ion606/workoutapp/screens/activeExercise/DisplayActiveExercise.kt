@@ -249,6 +249,7 @@ class DisplayActiveExercise {
                                 superset,
                                 restTimer,
                                 exercise,
+                                userManager,
                                 triggerExerciseSave,
                                 advanceToNextExercise
                             )
@@ -267,6 +268,7 @@ class DisplayActiveExercise {
                                 superset,
                                 restTimer,
                                 exercise,
+                                userManager,
                                 triggerExerciseSave,
                                 advanceToNextExercise
                             )
@@ -293,7 +295,7 @@ class DisplayActiveExercise {
                         )
 
                         goToNextExercise(
-                            superset, restTimer, exercise, { ae, sup ->
+                            superset, restTimer, exercise, userManager, { ae, sup ->
                                 triggerExerciseSave(ae, sup, false)
                             }, advanceToNextExercise
                         )
@@ -501,7 +503,11 @@ class DisplayActiveExercise {
                                         // remove item after anim
                                         LaunchedEffect(Unit) {
                                             delay(300)
+
+                                            val ind = itemList.indexOf(setItem)
                                             itemList.remove(setItem)
+                                            exercise.weight?.removeAt(ind)
+
                                             saveChanges()
 
                                             exercise.inset = itemList
@@ -796,6 +802,7 @@ class DisplayActiveExercise {
                                         superset,
                                         restTimer,
                                         exercise,
+                                        userManager,
                                         triggerExerciseSave,
                                         advanceToNextExercise
                                     )
@@ -805,6 +812,18 @@ class DisplayActiveExercise {
                                     .padding(start = 10.dp)
                             ) {
                                 Text(text = "Log Set", color = Color.White)
+                            }
+                        }
+                        else {
+                            Button(
+                                onClick = {
+                                    advanceToNextExercise(null, superset)
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.Bottom)
+                                    .padding(start = 10.dp)
+                            ) {
+                                Text(text = "Next Exercise", color = Color.White)
                             }
                         }
                     }
@@ -819,6 +838,7 @@ class DisplayActiveExercise {
             currentSuperset: SuperSet,
             restTimer: MutableIntState,
             exercise: ActiveExercise,
+            userManager: UserManager,
             triggerExerciseSave: (ActiveExercise, SuperSet, Boolean) -> Unit,
             advanceToNextExercise: (ActiveExercise?, SuperSet) -> Unit
         ) {
@@ -831,6 +851,7 @@ class DisplayActiveExercise {
                     currentSuperset,
                     restTimer,
                     exercise,
+                    userManager,
                     { ae, sup -> triggerExerciseSave(ae, sup, false) },
                     advanceToNextExercise
                 )
@@ -841,6 +862,7 @@ class DisplayActiveExercise {
             superset: SuperSet,
             restTimer: MutableIntState,
             exercise: ActiveExercise,
+            userManager: UserManager,
             triggerExerciseSave: (ActiveExercise, SuperSet) -> Unit,
             advanceToNextExercise: (ActiveExercise?, SuperSet) -> Unit
         ) {
@@ -856,12 +878,15 @@ class DisplayActiveExercise {
                     }
                 }
             }
+
             if (exercise.inset?.none { !it.isDone } == true) {
-                exercise.isDone = true
+                exercise.markAsDone(userWeight = userManager.getUserData()?.weight ?: 0f)
             }
+            else Log.d(TAG, "Exercise is not done yet: $exercise")
 
             triggerExerciseSave(exercise, superset)
             val nextExercise = superset.goToNextExercise()
+
             Log.d(TAG, "Switching to next exercise: $nextExercise")
             advanceToNextExercise(nextExercise, superset)
         }

@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +64,8 @@ import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.WorkoutBottomBar
+import com.ion606.workoutapp.screens.WorkoutSummaryScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -87,7 +90,7 @@ class WorkoutTimerObject {
 fun Timer(workoutTime: WorkoutTimerObject) {
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(1000L)
+            delay(1000L)
             if (!workoutTime.paused) {
                 workoutTime.time++
             }
@@ -99,7 +102,7 @@ fun Timer(workoutTime: WorkoutTimerObject) {
 @Composable
 fun TimerDisplay(workoutTime: WorkoutTimerObject) {
     Text(text = convertSecondsToTimeString(workoutTime.time),
-        style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+        style = MaterialTheme.typography.headlineMedium,
         color = if (workoutTime.paused) Color.LightGray else Color.White,
         textAlign = TextAlign.Center,
         fontFamily = FontFamily.Monospace,
@@ -139,6 +142,7 @@ class ExerciseScreen {
             val endWorkout = remember { mutableIntStateOf(0) }
             var saveWorkout by remember { mutableStateOf(false) }
             val workoutTime = remember { WorkoutTimerObject() }
+            val finalExercises = remember { mutableListOf<SuperSet>() }
 
             // Handle back navigation
             BackHandler {
@@ -215,6 +219,13 @@ class ExerciseScreen {
                 }
             }
 
+            if (finalExercises.isNotEmpty()) {
+                WorkoutSummaryScreen(
+                    activeExercises = finalExercises.flatMap { it.exercises },
+                    navController
+                )
+            }
+
             if (endWorkout.intValue == 1) {
                 LaunchedEffect("endworkout") {
                     coroutineScope.launch {
@@ -244,7 +255,7 @@ class ExerciseScreen {
                                 }.toMutableList())
                             }, "totalTime" to totalTime, "workoutTime" to workoutTime.time
                         )
-                        Log.d("SAVING", toSend.toString())
+
                         val r = syncManager.sendData(toSend, path = "workouts/workout")
                         Log.d("SAVE RESULT", r.toString())
 
@@ -261,7 +272,7 @@ class ExerciseScreen {
                             Log.d(TAG, "Successfully removed all exercises")
                         }
 
-                        navController.navigate("home")
+                        finalExercises.addAll(exercises)
                         endWorkout.intValue = 0
                     }
                 }
@@ -476,6 +487,7 @@ class ExerciseScreen {
 
                             coroutineScope.launch {
                                 dao.update(superset)
+
                                 Log.d(
                                     TAG, "updated DAO for exercise: ${exercise.exercise.title}"
                                 )

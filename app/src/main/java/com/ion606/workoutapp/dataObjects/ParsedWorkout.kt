@@ -25,7 +25,7 @@ data class ParsedExercise(
     @SerializedName("rating") val rating: Float,
     @SerializedName("ratingDescription") val ratingDescription: String,
     @SerializedName("videoPath") val videoPath: String,
-    @SerializedName("measure") val measure: ExerciseMeasureType,
+    @SerializedName("measureType") val measureType: ExerciseMeasureType,
     @SerializedName("inset") val inset: List<ParsedSetData>?,
     @SerializedName("weight") val weight: List<ParsedSetData>?,
     @SerializedName("sets") val sets: Int?
@@ -44,7 +44,6 @@ data class SavedWorkoutResponse(
 
 data class Workout(
     @SerializedName("_id") val id: String,
-    @SerializedName("exercises") val exercises: List<Exercise>,
     @SerializedName("supersets") val supersets: List<SuperSet>,
     @SerializedName("totalTime") val totalTime: Int,
     @SerializedName("isSaved") val isSaved: Boolean,
@@ -70,7 +69,7 @@ fun convertActiveExerciseToParsed(activeExercise: ActiveExercise): ParsedActiveE
                 rating = activeExercise.exercise.rating,
                 ratingDescription = activeExercise.exercise.ratingDescription,
                 videoPath = activeExercise.exercise.videoPath,
-                measure = activeExercise.exercise.measureType,
+                measureType = activeExercise.exercise.measureType,
                 inset = activeExercise.inset?.map {
                     ParsedSetData(
                         id = it.id,

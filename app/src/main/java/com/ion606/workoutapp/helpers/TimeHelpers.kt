@@ -33,7 +33,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ion606.workoutapp.managers.SyncManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -159,12 +161,14 @@ fun TimeInput(
 fun CheckIfInDebugMode(sm: SyncManager, isInDebugMode: (Boolean) -> Unit) {
     // launchedEffect is triggered once and keeps the coroutine running as long as this composable is in the composition
     LaunchedEffect(Unit) {
-        while (true) {
-            val r = sm.sendData(emptyMap(), path = "isindebugmode", method = "HEAD");
-            isInDebugMode(r.first)
+        withContext(Dispatchers.IO) {
+            while (true) {
+                val r = sm.sendData(emptyMap(), path = "isindebugmode", method = "HEAD");
+                isInDebugMode(r.first)
 
-            // wait for 5 minutes
-            delay(5 * 60 * 1000L)
+                // wait for 5 minutes
+                delay(5 * 60 * 1000L)
+            }
         }
     }
 }

@@ -94,7 +94,18 @@ class MainActivity : ComponentActivity() {
                 Scaffold(topBar = {
                     if (serverInDebugMode.value) TopScreenMessageText("Server is in debug mode - your data is unencrypted!")
                 }) { innerPadding ->
-                    SettingsNavGraph(navController, userManager, innerPadding, dataManager, sm, permissions, dao, nhelper, runDebugChecks, this@MainActivity)
+                    SettingsNavGraph(
+                        navController,
+                        userManager,
+                        innerPadding,
+                        dataManager,
+                        sm,
+                        permissions,
+                        dao,
+                        nhelper,
+                        runDebugChecks,
+                        this@MainActivity
+                    )
                 }
             }
         }
@@ -103,7 +114,8 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop();
 
-        val shouldPing = (this.nvc.value?.currentDestination?.route == Screen.Workout.route || this.nvc.value?.currentDestination?.route == Screen.ActiveWorkout.route);
+        val shouldPing =
+            (this.nvc.value?.currentDestination?.route == Screen.Workout.route || this.nvc.value?.currentDestination?.route == Screen.ActiveWorkout.route);
         if (shouldPing) {
             scheduleWorkoutReminder(this@MainActivity)
         }

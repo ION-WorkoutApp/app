@@ -73,7 +73,7 @@ fun MinimalistExerciseDetails(exercise: ParsedExercise) {
         )
 
         Text(
-            text = "${if (ExerciseMeasureType.useTime(exercise.measure)) "Time-Based" else "Reps-Based"}: ${exercise.inset?.filter { it.isDone }?.size}/${exercise.inset?.size} sets",
+            text = "${if (ExerciseMeasureType.useTime(exercise.measureType)) "Time-Based" else "Reps-Based"}: ${exercise.inset?.filter { it.isDone }?.size}/${exercise.inset?.size} sets",
             fontSize = 12.sp,
             color = Color(0xFFE0E0E0)
         )

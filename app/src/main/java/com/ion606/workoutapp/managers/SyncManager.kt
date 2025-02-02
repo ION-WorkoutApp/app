@@ -2,8 +2,10 @@ package com.ion606.workoutapp.managers
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.ion606.workoutapp.BuildConfig
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureTypeAdapter
 import com.ion606.workoutapp.helpers.URLHelpers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,7 +93,10 @@ class SyncManager(private var baseURL: String? = null, private var context: Cont
 
         val jsonData: String
         try {
-            jsonData = Gson().toJson(payload)
+            val gsonObj = GsonBuilder()
+                .registerTypeAdapter(ExerciseMeasureType::class.java, ExerciseMeasureTypeAdapter())
+                .create()
+            jsonData = gsonObj.toJson(payload)
         } catch (e: Exception) {
             Log.d(TAG, "Error: Failed to serialize data: ${e.message}")
             e.printStackTrace()
@@ -156,7 +161,7 @@ class SyncManager(private var baseURL: String? = null, private var context: Cont
 
                                 // Launch a coroutine to refresh the token
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    val refreshed = authManager.refreshToken()
+                                    val refreshed = authManager!!.refreshToken()
                                     if (refreshed) {
                                         sendData(payload, endpoint, path, method, authManager).let {
                                             // don't use extractResponseMessage because it might be smth else?

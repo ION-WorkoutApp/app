@@ -401,7 +401,7 @@ fun ExerciseDetails(exercise: ParsedExercise) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Reps or time-based sets with emojis
-        if (ExerciseMeasureType.useTime(exercise.measure)) {
+        if (ExerciseMeasureType.useTime(exercise.measureType)) {
             Text(
                 text = "⏱️ Time-Based: ${exercise.inset?.filter { it.isDone }?.size}/${exercise.inset?.size} sets completed",
                 fontSize = 14.sp,

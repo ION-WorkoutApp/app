@@ -119,7 +119,6 @@ data class SuperSet(
 
 @Dao
 interface SuperSetDao {
-
     // insert a single superset
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(superSet: SuperSet)

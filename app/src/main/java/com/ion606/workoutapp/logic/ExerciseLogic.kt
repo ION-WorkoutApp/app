@@ -50,25 +50,6 @@ import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 
 
-// TODO: add "select current set" logic
-fun exerciseLogic(
-    itemList: MutableState<MutableList<ExerciseSetDataObj>>,
-    ll: MutableList<ExerciseSetDataObj>?,
-    exercise: ActiveExercise
-) {
-    // first not done (placeholder logic)
-    val activeSetIndex = itemList.value.indexOfFirst { !it.isDone }
-    if (activeSetIndex == -1) return // No active set found
-
-    // Update the item in the list
-    val updatedList = itemList.value.toMutableList() // Create a new list
-    val updatedSet = updatedList[activeSetIndex].copy(isDone = true) // Copy with updated state
-    updatedList[activeSetIndex] = updatedSet
-
-    // Assign the new list back to the state
-    itemList.value = updatedList
-}
-
 @Composable
 fun DisplayTimer(
     timeLeft: Int,

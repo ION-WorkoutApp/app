@@ -89,7 +89,7 @@ fun SettingsNavGraph(
             )
         }
         composable(Screen.LoginSignup.route) { LoginSignupScreen(navController) }
-        composable(Screen.Signup.route) { Signup(navController = navController, dataManager) }
+        composable(Screen.Signup.route) { Signup(dataManager, navController) }
         composable(Screen.PermissionsRedirect.route) {
             permissions.PermissionsScreen(
                 context, navController, true

@@ -5,6 +5,9 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
+import com.ion606.workoutapp.dataObjects.ExerciseMeasureTypeAdapter
 import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
 import org.json.JSONArray
 import java.text.DateFormat
@@ -30,7 +33,10 @@ fun parseWorkoutResponse(json: String): SavedWorkoutResponse? {
 
 fun parseSavedWorkoutResponse(json: String): SavedWorkoutResponse? {
     return try {
-        val gson = Gson()
+        val gson = GsonBuilder()
+            .registerTypeAdapter(ExerciseMeasureType::class.java, ExerciseMeasureTypeAdapter())
+            .create()
+
         gson.fromJson(json, SavedWorkoutResponse::class.java)
     } catch (e: Exception) {
         Log.e("LogScreen", "Parsing error: ${e.message}")
@@ -38,7 +44,6 @@ fun parseSavedWorkoutResponse(json: String): SavedWorkoutResponse? {
         null
     }
 }
-
 
 @SuppressLint("NewApi")
 fun formatTimestamp(timestamp: String, returnTime: Boolean = false): String {
