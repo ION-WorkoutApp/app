@@ -17,9 +17,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,52 +35,65 @@ import com.ion606.workoutapp.screens.user.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkoutSummaryScreen(
+fun WorkoutSummaryBottomSheet(
     activeExercises: List<ActiveExercise>,
     navController: NavHostController
 ) {
-    // Define the height for the bottom bar
     val bottomBarHeight = 80.dp
+    // Create and configure the sheet state so that it opens fully expanded.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Workout Summary", style = MaterialTheme.typography.titleLarge) }
-            )
+    ModalBottomSheet(
+        onDismissRequest = {
+            navController.navigate(Screen.Home.route)
         },
-        bottomBar = {
-            // Use a Box as a transparent container to hold the fixed button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(bottomBarHeight)
-                    .background(Color.Transparent)
-                    .offset(y = (-30).dp)
-            ) {
-                Button(
-                    onClick = { navController.navigate(Screen.Home.route) },
-                    modifier = Modifier.align(Alignment.Center).fillMaxWidth()
+        sheetState = sheetState,
+        properties = ModalBottomSheetProperties(
+            shouldDismissOnBackPress = true
+        )
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Workout Summary", style = MaterialTheme.typography.titleLarge) }
+                )
+            },
+            bottomBar = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(bottomBarHeight)
+                        .background(Color.Transparent)
+                        .offset(y = (-30).dp)
                 ) {
-                    Text("Done")
+                    Button(
+                        onClick = {
+                            navController.navigate(Screen.Home.route)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .fillMaxWidth()
+                    ) {
+                        Text("Done")
+                    }
                 }
             }
-        }
-    ) { paddingValues ->
-        // Add extra bottom padding so that list content is not hidden under the bottom bar
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(bottom = bottomBarHeight),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            item {
-                WorkoutSummaryStats(activeExercises = activeExercises)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            items(activeExercises) { exercise ->
-                ExerciseSummaryItem(exercise = exercise)
-                Spacer(modifier = Modifier.height(12.dp))
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(bottom = bottomBarHeight),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                item {
+                    WorkoutSummaryStats(activeExercises = activeExercises)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                items(activeExercises) { exercise ->
+                    ExerciseSummaryItem(exercise = exercise)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }

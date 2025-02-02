@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,8 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.ion606.workoutapp.R
-import com.ion606.workoutapp.dataObjects.ActiveExercise
-import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 
 

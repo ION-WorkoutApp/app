@@ -64,7 +64,7 @@ import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.WorkoutBottomBar
-import com.ion606.workoutapp.screens.WorkoutSummaryScreen
+import com.ion606.workoutapp.screens.WorkoutSummaryBottomSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -220,7 +220,7 @@ class ExerciseScreen {
             }
 
             if (finalExercises.isNotEmpty()) {
-                WorkoutSummaryScreen(
+                WorkoutSummaryBottomSheet(
                     activeExercises = finalExercises.flatMap { it.exercises },
                     navController
                 )
@@ -477,6 +477,7 @@ class ExerciseScreen {
                         context = context,
                         nhelper = nhelper,
                         currentSuperset = currentSuperset,
+                        dao = dao,
                         triggerExerciseSave = { exercise: ActiveExercise, superset: SuperSet, exitScreen: Boolean ->
                             Log.d(
                                 TAG,

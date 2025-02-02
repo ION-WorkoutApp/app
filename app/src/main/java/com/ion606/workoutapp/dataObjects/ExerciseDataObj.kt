@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Embedded
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -27,9 +28,7 @@ import java.util.UUID
 
 
 enum class ExerciseMeasureType(val value: Int) {
-    REP_BASED(0),
-    TIME_BASED(1),
-    DISTANCE_BASED(2);
+    REP_BASED(0), TIME_BASED(1), DISTANCE_BASED(2);
 
     companion object {
         fun fromValue(value: Int): ExerciseMeasureType {
@@ -55,8 +54,7 @@ data class Exercise(
     val rating: Float,
     val ratingDescription: String,
     val videoPath: String,
-    @TypeConverters(ExerciseMeasureTypeConverter::class)
-    val measureType: ExerciseMeasureType,
+    @TypeConverters(ExerciseMeasureTypeConverter::class) val measureType: ExerciseMeasureType,
     val perSide: Boolean,
     val met: Float
 )
@@ -74,9 +72,7 @@ data class ExerciseSetDataObj(
 class ExerciseMeasureTypeAdapter : JsonDeserializer<ExerciseMeasureType>,
     JsonSerializer<ExerciseMeasureType> {
     override fun deserialize(
-        json: JsonElement?,
-        typeOfT: Type?,
-        context: JsonDeserializationContext?
+        json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?
     ): ExerciseMeasureType {
         // If the JSON element is null, return a default value.
         if (json == null) return ExerciseMeasureType.REP_BASED
@@ -102,9 +98,7 @@ class ExerciseMeasureTypeAdapter : JsonDeserializer<ExerciseMeasureType>,
     }
 
     override fun serialize(
-        src: ExerciseMeasureType?,
-        typeOfSrc: Type?,
-        context: JsonSerializationContext?
+        src: ExerciseMeasureType?, typeOfSrc: Type?, context: JsonSerializationContext?
     ): JsonElement {
         return JsonPrimitive(src?.value)
     }
@@ -195,21 +189,79 @@ data class ActiveExercise(
     var caloriesBurned: Double = 0.0,
     var duration: Int = 0,
 ) {
+    // This property should not be persisted by Room
+    @Ignore
+    private val stopwatch = Stopwatch()
+
+    fun startStopwatch() {
+        stopwatch.startTimer()
+    }
+
+    fun stopStopwatch() {
+        stopwatch.stopTimer()
+
+        // Convert the elapsed time from milliseconds to seconds
+        this.duration = (stopwatch.getCurrentElapsedTime() / 1000).toInt()
+    }
+
+    fun resetStopwatch() {
+        stopwatch.resetTimer()
+        duration = 0
+    }
+
+    // The inner stopwatch class handles the timing logic.
+    inner class Stopwatch {
+        // Timestamp when the stopwatch was started (in milliseconds)
+        private var startTime: Long = 0L
+
+        // Accumulated elapsed time (in milliseconds)
+        private var elapsedTime: Long = 0L
+
+        fun startTimer() {
+            if (startTime == 0L) {
+                Log.d("STOPWATCH", "Starting timer");
+                startTime = System.currentTimeMillis()
+            }
+        }
+
+        fun stopTimer() {
+            if (startTime != 0L) {
+                Log.d("STOPWATCH", "Stopping timer");
+                elapsedTime += System.currentTimeMillis() - startTime
+                startTime = 0L
+            }
+        }
+
+        fun resetTimer() {
+            startTime = 0L
+            elapsedTime = 0L
+        }
+
+        fun getCurrentElapsedTime(): Long {
+            // If the stopwatch is running, add the current elapsed time.
+            return if (startTime != 0L) {
+                elapsedTime + (System.currentTimeMillis() - startTime)
+            } else {
+                elapsedTime
+            }
+        }
+    }
+
     fun markAsDone(userWeight: Number) {
         if (this.inset?.sumOf { it.value } == null) {
             Log.d("ActiveExercise", "Inset is null ${this.inset}")
             return
         }
-        val insetSum = this.inset!!.sumOf { it.value };
 
-        if (this.exercise.measureType == ExerciseMeasureType.REP_BASED) {
-            this.caloriesBurned =
-                (this.exercise.met * userWeight.toFloat() * 3.5 * (insetSum * 3 / 60)) / 200
+        // IN MINUTES
+        val multiplier = if (this.exercise.measureType == ExerciseMeasureType.REP_BASED) {
+            (this.stopwatch.getCurrentElapsedTime() / 60000).toDouble()
         } else {
-            this.caloriesBurned = (this.exercise.met * userWeight.toFloat() * 3.5 * insetSum) / 200
+            this.inset!!.sumOf { it.value }.toDouble() / 60
         }
 
-        isDone = true
+        this.caloriesBurned = (this.exercise.met * userWeight.toDouble() * 3.5 * multiplier) / 200
+        this.isDone = true
     }
 
     override fun equals(other: Any?): Boolean {
@@ -237,6 +289,7 @@ data class ActiveExercise(
     }
 }
 
+
 data class ExerciseFilter(
     val muscleGroup: String? = null,
     val equipment: String? = null,
@@ -245,6 +298,5 @@ data class ExerciseFilter(
 )
 
 data class CategoryData(
-    val field: String,
-    val categories: List<String>
+    val field: String, val categories: List<String>
 )
