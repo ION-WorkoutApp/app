@@ -76,6 +76,7 @@ import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
 import com.ion606.workoutapp.elements.InputField
 import com.ion606.workoutapp.elements.InputFieldCompact
+import com.ion606.workoutapp.elements.Tooltip
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
@@ -190,21 +191,27 @@ class DisplayActiveExercise {
             }
 
             if (shouldLogSet) {
-                restTimer.intValue = superset.getCurrentExercise()?.restTime ?: 0
+                val tempTime = superset.getCurrentExercise()?.restTime ?: 0
 
-                LaunchedEffect(Unit) {
-                    coroutineScope.launch {
-                        logSet(
-                            superset,
-                            restTimer,
-                            exercise,
-                            userManager,
-                            dao,
-                            triggerExerciseSave,
-                            advanceToNextExercise
-                        )
-                        shouldLogSet = false
+                if (!superset.isOnLastExercise() || tempTime <= 0) {
+                    LaunchedEffect(Unit) {
+                        coroutineScope.launch {
+                            logSet(
+                                superset,
+                                restTimer,
+                                exercise,
+                                userManager,
+                                dao,
+                                triggerExerciseSave,
+                                advanceToNextExercise
+                            )
+                            shouldLogSet = false
+                        }
                     }
+                }
+                else {
+                    restTimer.intValue = tempTime
+                    shouldLogSet = false
                 }
             }
 
@@ -289,26 +296,52 @@ class DisplayActiveExercise {
             } else if (restTimer.intValue > 0) {
                 Log.d(TAG, "Rest timer is active with time ${restTimer.intValue}")
 
+                // show notif now because it's a progressive
+                val pManager = nhelper.sendNotificationIfUnfocused(
+                    title = "Rest Timer",
+                    message = "Rest timer completed for ${exercise.exercise.title}",
+                    intents = listOf(
+                        "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                        "exerciseId" to exercise.exercise.exerciseId
+                    ),
+                    isProgress = true
+                )
+
+                if (pManager == null) Log.d(TAG, "PManager is null, timer bar will not be displayed");
+
                 // show rest timer if needed
                 StartTimer(headerText = "Rest Timer",
                     remainingTime = restTimer.intValue,
+                    onTickCB = { remainingTime ->
+                        if (pManager == null) return@StartTimer
+
+                        pManager.setProgress(restTimer.intValue, restTimer.intValue - remainingTime, false)
+                        nhelper.updateNotification(pManager);
+                    },
                     onFinishCB = { didFinish ->
                         if (!didFinish) {
                             Log.d(TAG, "Rest timer was cancelled")
                             return@StartTimer
                         }
 
-                        restTimer.intValue = -1
+                        // remove progress bar
+                        pManager?.setProgress(0, 0, false)
+                        restTimer.intValue = 0
+
                         Log.d(TAG, "Rest timer completed")
 
-                        nhelper.sendNotificationIfUnfocused(
-                            title = "Rest Timer",
-                            message = "Rest timer completed for ${exercise.exercise.title}",
-                            intents = listOf(
-                                "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
-                                "exerciseId" to exercise.exercise.exerciseId
-                            )
-                        )
+                            coroutineScope.launch {
+                                logSet(
+                                    superset,
+                                    restTimer,
+                                    exercise,
+                                    userManager,
+                                    dao,
+                                    triggerExerciseSave,
+                                    advanceToNextExercise
+                                )
+                                shouldLogSet = false
+                        }
                     })
             }
 
@@ -525,6 +558,15 @@ class DisplayActiveExercise {
                     var isVisible by remember { mutableStateOf(true) }
                     var editingTimer by remember { mutableStateOf(false) }
                     var restTimeStr by remember { mutableIntStateOf(setItem.restTime) }
+                    var showToolTip by remember { mutableStateOf(false) }
+
+                    if (showToolTip) {
+                        Tooltip(
+                            text = "Cannot edit rest time intermediate exercises!",
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            onDismiss = { showToolTip = false }
+                        )
+                    }
 
                     AnimatedVisibility(
                         visible = isVisible,
@@ -554,9 +596,12 @@ class DisplayActiveExercise {
                                         .height(35.dp)
                                         .align(Alignment.CenterVertically)
                                         .clickable {
-                                            if (restTimer.intValue <= 0) {
-                                                editingTimer = true
-                                            }
+                                            if (!superset.isOnLastExercise()) showToolTip = true
+                                            else if (restTimer.intValue <= 0) editingTimer = true
+                                            else Log.d(
+                                                TAG,
+                                                "Rest timer is active, cannot edit rest time....How did you even do this?"
+                                            )
                                         })
                             }
                         } else {

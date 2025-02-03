@@ -115,25 +115,21 @@ class NotificationManager(private val context: Context) {
         }
     }
 
-    /**
-     * Build and send a notification with a big picture and a custom action.
-     * Make sure you have already called createNotificationChannel() in your Application/Activity.
-     */
-    fun sendNotification(
+    private fun sendNotification(
         title: String,
         message: String,
         actionName: String = "OPEN_APP",
         iconResId: Int = R.drawable.ic_app_icon,
         actions: List<NotificationCompat.Action> = emptyList(),
         intents: List<Pair<String, String>> = emptyList(),
-        idleOnly: Boolean = false
-    ) {
+        isProgress: Boolean = false
+    ): NotificationCompat.Builder? {
         // Check for POST_NOTIFICATIONS permission (Android 13+).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ActivityCompat.checkSelfPermission(
                 context, Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            return // Permission not granted.
+            return null // Permission not granted.
         }
 
         // Prepare a large icon bitmap from the provided resource ID.
@@ -167,10 +163,13 @@ class NotificationManager(private val context: Context) {
                     .bigLargeIcon(null as Bitmap?)
             )
 
-        // Add each action dynamically.
-        actions.forEach { action ->
-            builder.addAction(action)
+        if (isProgress) {
+            builder.setOngoing(true);
+            builder.setProgress(100, 1, false)
         }
+
+        // Add each action dynamically.
+        actions.forEach { action -> builder.addAction(action) }
 
         // Add the default action if no custom actions are provided.
         if (actions.isEmpty()) {
@@ -184,6 +183,8 @@ class NotificationManager(private val context: Context) {
         // Send the notification.
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.notify(NOTIFICATION_ID, builder.build())
+
+        return builder;
     }
 
     fun sendNotificationIfUnfocused(
@@ -192,10 +193,24 @@ class NotificationManager(private val context: Context) {
         actionName: String = "OPEN_APP",
         iconResId: Int = R.drawable.ic_app_icon,
         actions: List<NotificationCompat.Action> = emptyList(),
-        intents: List<Pair<String, String>> = emptyList()
-    ) {
+        intents: List<Pair<String, String>> = emptyList(),
+        isProgress: Boolean = false
+    ): NotificationCompat.Builder? {
         // TODO: Implement this method to send a notification only if the app is not in the foreground
-        sendNotification(title, message, actionName, iconResId, actions, intents)
+        return sendNotification(title, message, actionName, iconResId, actions, intents, isProgress)
+    }
+
+    fun updateNotification(builder: NotificationCompat.Builder) {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // if the user doesn't have perms, then the notif shouldn't have posted in the first place
+            return
+        }
+
+        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build());
     }
 }
 

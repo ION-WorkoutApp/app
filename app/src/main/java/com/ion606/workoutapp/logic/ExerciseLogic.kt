@@ -65,6 +65,7 @@ fun DisplayTimer(
 @Composable
 fun StartTimer(
     onFinishCB: (Boolean) -> Unit, // returns true on success, false on failure
+    onTickCB: (Int) -> Unit = {}, // returns the remaining time -- DO NOT UPDATE THE REST TIME VAR HERE
     remainingTime: Int, // in seconds
     headerText: String = "Time Remaining"
 ) {
@@ -72,13 +73,15 @@ fun StartTimer(
     var timer: CountDownTimer? by remember { mutableStateOf(null) } // Current timer instance
     var isPaused by remember { mutableStateOf(false) } // Tracks whether the timer is paused
 
-    Log.d("TIMER", "started timer $headerText with $remainingTime seconds")
     // Start the timer function
     fun startTimer(time: Int) {
+        Log.d("TIMER", "started timer $headerText with $remainingTime seconds")
+
         timer?.cancel() // Cancel any existing timer
         timer = object : CountDownTimer(time * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
                 timeLeft = (millisUntilFinished / 1000).toInt()
+                onTickCB(timeLeft)
             }
 
             override fun onFinish() {

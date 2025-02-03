@@ -47,9 +47,8 @@ class Alerts {
             text: String = "Are you sure you want to end the workout? Your progress will be lost!",
             oneButton: Boolean = false
         ) {
-            androidx.compose.material.AlertDialog(
+            AlertDialog(
                 modifier = Modifier.background(Color.DarkGray),
-                backgroundColor = Color.DarkGray,
                 onDismissRequest = { onClick(true) },
                 title = { Text(text = title) },
                 text = { Text(text = text) },
@@ -83,6 +82,7 @@ class Alerts {
             )
         }
 
+
         @Composable
         fun ConfirmDeleteAccountDialog(
             onDismiss: () -> Unit,
@@ -114,7 +114,9 @@ class Alerts {
                                     Icon(icon, contentDescription = "Toggle password visibility")
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().semantics { this.password() }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics { this.password() }
                         )
                     }
                 },
