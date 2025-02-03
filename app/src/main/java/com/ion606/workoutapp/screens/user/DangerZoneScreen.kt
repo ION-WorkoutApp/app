@@ -100,9 +100,9 @@ fun DangerZoneScreen(
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             val r = userManager.checkDataStatus()
-            if (!r.second.toString().contains("No Request Made")) {
-                checkDataStatus = "Data request status: ${r.second}"
-            }
+            checkDataStatus = if (!r.second.toString().contains("No Request Made")) {
+                "Data request status: ${r.second}"
+            } else "No data request made this month"
         }
     }
 

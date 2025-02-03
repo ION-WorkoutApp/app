@@ -54,6 +54,10 @@ class DataManager(context: Context, private val sm: SyncManager) {
         return sm.pingServer(url)
     }
 
+    suspend fun checkDebugMode(url: String? = this.loadURL()): Pair<Boolean, Any?> {
+        return sm.sendData(emptyMap(), path = "isindebugmode", method = "HEAD", endpoint = url);
+    }
+
     suspend fun refreshToken(): Boolean {
         return this.authManager.refreshToken()
     }

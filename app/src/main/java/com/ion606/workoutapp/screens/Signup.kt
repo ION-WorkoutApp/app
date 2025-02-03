@@ -1,44 +1,46 @@
 package com.ion606.workoutapp.screens;
 
-import androidx.compose.foundation.layout.Arrangement;
-import androidx.compose.foundation.layout.Box;
-import androidx.compose.foundation.layout.Column;
-import androidx.compose.foundation.layout.Row;
-import androidx.compose.foundation.layout.Spacer;
-import androidx.compose.foundation.layout.fillMaxSize;
-import androidx.compose.foundation.layout.fillMaxWidth;
-import androidx.compose.foundation.layout.height;
-import androidx.compose.foundation.layout.padding;
-import androidx.compose.foundation.text.KeyboardOptions;
-import androidx.compose.material.icons.Icons;
-import androidx.compose.material.icons.filled.ArrowDropDown;
-import androidx.compose.material.icons.filled.ArrowDropUp;
-import androidx.compose.material.icons.filled.Visibility;
-import androidx.compose.material.icons.filled.VisibilityOff;
-import androidx.compose.material3.Button;
-import androidx.compose.material3.DropdownMenu;
-import androidx.compose.material3.DropdownMenuItem;
-import androidx.compose.material3.Icon;
-import androidx.compose.material3.IconButton;
-import androidx.compose.material3.MaterialTheme;
-import androidx.compose.material3.OutlinedTextField;
-import androidx.compose.material3.Scaffold;
-import androidx.compose.material3.Text;
-import androidx.compose.runtime.Composable;
-import androidx.compose.runtime.LaunchedEffect;
-import androidx.compose.runtime.MutableState;
-import androidx.compose.runtime.mutableStateOf;
-import androidx.compose.runtime.remember;
-import androidx.compose.ui.Alignment;
-import androidx.compose.ui.Modifier;
-import androidx.compose.ui.semantics.password;
-import androidx.compose.ui.semantics.semantics;
-import androidx.compose.ui.text.input.KeyboardType;
-import androidx.compose.ui.text.input.PasswordVisualTransformation;
-import androidx.compose.ui.text.input.VisualTransformation;
-import androidx.compose.ui.unit.dp;
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.password
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.ion606.workoutapp.managers.DataManager;
+import com.ion606.workoutapp.helpers.Alerts
+import com.ion606.workoutapp.managers.DataManager
+import com.ion606.workoutapp.screens.user.Screen
 
 @Composable
 fun Signup(dataManager: DataManager, navController: NavController) {
@@ -56,8 +58,8 @@ fun Signup(dataManager: DataManager, navController: NavController) {
     val gender = remember { mutableStateOf("Male") };
     val height = remember { mutableStateOf("") };
     val weight = remember { mutableStateOf("") };
-    val weightUnit = remember { mutableStateOf("lbs") }; // new: default from schema
-    val distanceUnit = remember { mutableStateOf("km") }; // new: default from schema
+    val weightUnit = remember { mutableStateOf("kg") };
+    val distanceUnit = remember { mutableStateOf("km") };
 
     // step 3: essential preferences + general preferences (required sub-document)
     val fitnessGoal = remember { mutableStateOf("") };
@@ -94,6 +96,8 @@ fun Signup(dataManager: DataManager, navController: NavController) {
     val serverUrl = remember { mutableStateOf("https://test.ion606.com") };
     val statusMessage = remember { mutableStateOf("creating account...") };
     val statusSubMessage = remember { mutableStateOf("") };
+    val showDebugAlert = remember { mutableStateOf(false) };
+    val confed = remember { mutableStateOf(false) };
 
     // dropdown options
     val genderOptions = listOf("Male", "Female", "Non-Binary", "Other");
@@ -141,26 +145,29 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                 1 -> {
                     // screen 1: basic account info
                     Text("create your account", style = MaterialTheme.typography.headlineMedium);
+
                     Spacer(modifier = Modifier.height(24.dp));
-                    OutlinedTextField(
-                        value = name.value,
+
+                    OutlinedTextField(value = name.value,
                         onValueChange = { name.value = it },
                         label = { Text("name") },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 1
                     );
+
                     Spacer(modifier = Modifier.height(16.dp));
-                    OutlinedTextField(
-                        value = email.value,
+
+                    OutlinedTextField(value = email.value,
                         onValueChange = { email.value = it },
                         label = { Text("email") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 1
                     );
+
                     Spacer(modifier = Modifier.height(16.dp));
-                    OutlinedTextField(
-                        value = password.value,
+
+                    OutlinedTextField(value = password.value,
                         onValueChange = { password.value = it },
                         label = { Text("password") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -170,27 +177,38 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         maxLines = 1,
                         visualTransformation = if (passwordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            val image = if (passwordVisible.value) Icons.Filled.Visibility else Icons.Filled.VisibilityOff;
-                            val description = if (passwordVisible.value) "hide password" else "show password";
-                            IconButton(onClick = { passwordVisible.value = !passwordVisible.value }) {
+                            val image =
+                                if (passwordVisible.value) Icons.Filled.Visibility else Icons.Filled.VisibilityOff;
+                            val description =
+                                if (passwordVisible.value) "hide password" else "show password";
+                            IconButton(onClick = {
+                                passwordVisible.value = !passwordVisible.value
+                            }) {
                                 Icon(imageVector = image, contentDescription = description);
                             }
-                        }
-                    );
+                        });
+
                     Spacer(modifier = Modifier.height(24.dp));
+
+                    OutlinedTextField(value = serverUrl.value,
+                        onValueChange = { serverUrl.value = it },
+                        label = { Text("Server URL") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1
+                    );
+
                     Button(
-                        onClick = { currentStep.value = 2 },
-                        modifier = Modifier.fillMaxWidth()
+                        onClick = { currentStep.value = 2 }, modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("next");
                     }
                 }
+
                 2 -> {
                     // screen 2: personal info
                     Text("personal information", style = MaterialTheme.typography.headlineMedium);
                     Spacer(modifier = Modifier.height(24.dp));
-                    OutlinedTextField(
-                        value = age.value,
+                    OutlinedTextField(value = age.value,
                         onValueChange = { age.value = it },
                         label = { Text("age") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -199,13 +217,10 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                     );
                     Spacer(modifier = Modifier.height(16.dp));
                     Dropdown(
-                        label = "gender",
-                        options = genderOptions,
-                        selectedOption = gender
+                        label = "gender", options = genderOptions, selectedOption = gender
                     );
                     Spacer(modifier = Modifier.height(16.dp));
-                    OutlinedTextField(
-                        value = height.value,
+                    OutlinedTextField(value = height.value,
                         onValueChange = { height.value = it },
                         label = { Text("height (cm)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -213,10 +228,9 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         maxLines = 1
                     );
                     Spacer(modifier = Modifier.height(16.dp));
-                    OutlinedTextField(
-                        value = weight.value,
+                    OutlinedTextField(value = weight.value,
                         onValueChange = { weight.value = it },
-                        label = { Text("weight") },
+                        label = { Text("weight ${weightUnit.value}") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 1
@@ -246,14 +260,13 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         }
                     }
                 }
+
                 3 -> {
                     // screen 3: essential & general preferences
                     Text("preferences", style = MaterialTheme.typography.headlineMedium);
                     Spacer(modifier = Modifier.height(24.dp));
                     Dropdown(
-                        label = "fitness goal",
-                        options = goals,
-                        selectedOption = fitnessGoal
+                        label = "fitness goal", options = goals, selectedOption = fitnessGoal
                     );
                     Spacer(modifier = Modifier.height(16.dp));
                     Dropdown(
@@ -312,71 +325,103 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         }
                     }
                 }
+
                 4 -> {
-                    // screen 4: account creation (optional: include further optional preferences here)
-                    Text(statusMessage.value, style = MaterialTheme.typography.headlineMedium);
+                    // screen 4: account creation
+
+                    Text(statusMessage.value, style = MaterialTheme.typography.headlineLarge);
                     Spacer(modifier = Modifier.height(16.dp));
-                    Text(statusSubMessage.value, style = MaterialTheme.typography.bodyMedium);
+                    Text(statusSubMessage.value, style = MaterialTheme.typography.headlineMedium);
+
+                    if (showDebugAlert.value) {
+                        Alerts.ShowAlert(title = "debug mode",
+                            text = "debug mode is enabled on the server, this means that your data is unencrypted and can be read by admins. are you sure you want to continue?",
+                            onClick = {
+                                if (it) confed.value = true;
+                                else navController.navigate(Screen.Home.route);
+                            });
+                    }
+
                     LaunchedEffect(Unit) {
-                        statusMessage.value = "creating account...";
-                        // assemble general preferences
-                        val generalPreferences = mapOf(
-                            "activityLevel" to activityLevel.value,
-                            "preferredWorkoutTime" to preferredWorkoutTime.value,
-                            "workoutFrequency" to (workoutFrequency.value.trim().toIntOrNull() ?: 3),
-                            "injuriesOrLimitations" to injuriesOrLimitations.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                            "equipmentAccess" to equipmentAccess.value.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                            "preferredWorkoutEnvironment" to preferredWorkoutEnvironment.value
-                        );
-                        // assemble optional preferences (using defaults if not set)
-                        val workoutPreferences = mapOf(
-                            "preferredWorkoutDuration" to (preferredWorkoutDuration.value.trim().toIntOrNull() ?: 30),
-                            "exerciseDifficulty" to exerciseDifficulty.value,
-                            "warmupAndCooldownPreference" to warmupAndCooldownPreference.value,
-                            "preferredWorkoutMusic" to preferredWorkoutMusic.value
-                        );
-                        val progressTracking = mapOf(
-                            "stepGoal" to (stepGoal.value.trim().toIntOrNull() ?: 10000),
-                            "waterIntakeGoal" to (waterIntakeGoal.value.trim().toIntOrNull() ?: 2000),
-                            "sleepTracking" to sleepTracking.value
-                        );
-                        val notifications = mapOf(
-                            "remindersEnabled" to remindersEnabled.value,
-                            "notificationFrequency" to notificationFrequency.value,
-                            "preferredReminderTime" to preferredReminderTime.value
-                        );
-                        val socialPreferences = mapOf(
-                            "socialSharing" to socialSharing.value,
-                            "leaderboardParticipation" to leaderboardParticipation.value,
-                            "badgesAndAchievements" to badgesAndAchievements.value.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                        );
-                        // assemble complete user data per the new schema
-                        val userData = mapOf(
-                            "name" to name.value.trim(),
-                            "email" to email.value.trim(),
-                            "password" to password.value.trim(),
-                            "age" to (age.value.trim().toIntOrNull() ?: 0),
-                            "gender" to gender.value,
-                            "height" to (height.value.trim().toIntOrNull() ?: 0),
-                            "weight" to (weight.value.trim().toIntOrNull() ?: 0),
-                            "weightUnit" to weightUnit.value,
-                            "distanceUnit" to distanceUnit.value,
-                            "fitnessGoal" to fitnessGoal.value.trim(),
-                            "preferredWorkoutType" to preferredWorkoutType.value.trim(),
-                            "comfortLevel" to comfortLevel.value.trim(),
-                            "generalPreferences" to generalPreferences,
-                            "workoutPreferences" to workoutPreferences,
-                            "progressTracking" to progressTracking,
-                            "notifications" to notifications,
-                            "socialPreferences" to socialPreferences
-                        );
-                        // create account via dataManager
-                        val (success, response) = dataManager.createAccount(userData, serverUrl.value);
-                        if (success) {
-                            navController.navigate("details");
-                        } else {
-                            statusMessage.value = "signup failed!";
-                            statusSubMessage.value = "error: ${response ?: "unknown error"}";
+                        // debug check
+                        val r = dataManager.checkDebugMode(serverUrl.value);
+                        if (r.first) showDebugAlert.value = true;
+                        else confed.value = true
+
+                        // sloppy fix
+                        if (confed.value) {
+                            statusMessage.value = "creating account...";
+
+                            // assemble general preferences
+                            val generalPreferences = mapOf("activityLevel" to activityLevel.value,
+                                "preferredWorkoutTime" to preferredWorkoutTime.value,
+                                "workoutFrequency" to (workoutFrequency.value.trim().toIntOrNull()
+                                    ?: 3),
+                                "injuriesOrLimitations" to injuriesOrLimitations.value.split(",")
+                                    .map { it.trim() }.filter { it.isNotEmpty() },
+                                "equipmentAccess" to equipmentAccess.value.split(",")
+                                    .map { it.trim() }.filter { it.isNotEmpty() },
+                                "preferredWorkoutEnvironment" to preferredWorkoutEnvironment.value
+                            );
+                            // assemble optional preferences (using defaults if not set)
+                            val workoutPreferences = mapOf(
+                                "preferredWorkoutDuration" to (preferredWorkoutDuration.value.trim()
+                                    .toIntOrNull() ?: 30),
+                                "exerciseDifficulty" to exerciseDifficulty.value,
+                                "warmupAndCooldownPreference" to warmupAndCooldownPreference.value,
+                                "preferredWorkoutMusic" to preferredWorkoutMusic.value
+                            );
+                            val progressTracking = mapOf(
+                                "stepGoal" to (stepGoal.value.trim().toIntOrNull() ?: 10000),
+                                "waterIntakeGoal" to (waterIntakeGoal.value.trim().toIntOrNull()
+                                    ?: 2000),
+                                "sleepTracking" to sleepTracking.value
+                            );
+                            val notifications = mapOf(
+                                "remindersEnabled" to remindersEnabled.value,
+                                "notificationFrequency" to notificationFrequency.value,
+                                "preferredReminderTime" to preferredReminderTime.value
+                            );
+                            val socialPreferences = mapOf("socialSharing" to socialSharing.value,
+                                "leaderboardParticipation" to leaderboardParticipation.value,
+                                "badgesAndAchievements" to badgesAndAchievements.value.split(",")
+                                    .map { it.trim() }.filter { it.isNotEmpty() });
+
+                            val weightTransformed = if (weightUnit.value == "lbs") {
+                                (weight.value.trim().toIntOrNull() ?: 0) * 0.453592
+                            } else {
+                                weight.value.trim().toIntOrNull() ?: 0
+                            }
+
+                            val userData = mapOf(
+                                "name" to name.value.trim(),
+                                "email" to email.value.trim(),
+                                "password" to password.value.trim(),
+                                "age" to (age.value.trim().toIntOrNull() ?: 0),
+                                "gender" to gender.value,
+                                "height" to (height.value.trim().toIntOrNull() ?: 0),
+                                "weight" to weightTransformed,
+                                "weightUnit" to weightUnit.value,
+                                "distanceUnit" to distanceUnit.value,
+                                "fitnessGoal" to fitnessGoal.value.trim(),
+                                "preferredWorkoutType" to preferredWorkoutType.value.trim(),
+                                "comfortLevel" to comfortLevel.value.trim(),
+                                "generalPreferences" to generalPreferences,
+                                "workoutPreferences" to workoutPreferences,
+                                "progressTracking" to progressTracking,
+                                "notifications" to notifications,
+                                "socialPreferences" to socialPreferences
+                            );
+                            // create account via dataManager
+                            val (success, response) = dataManager.createAccount(
+                                userData, serverUrl.value
+                            );
+                            if (success) {
+                                navController.navigate("details");
+                            } else {
+                                statusMessage.value = "signup failed!";
+                                statusSubMessage.value = response ?: "unknown error";
+                            }
                         }
                     }
                 }
@@ -395,8 +440,7 @@ fun Dropdown(
     val expanded = remember { mutableStateOf(false) };
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = selectedOption.value,
+        OutlinedTextField(value = selectedOption.value,
             onValueChange = { },
             label = { Text(label) },
             modifier = Modifier.fillMaxWidth(),
@@ -408,21 +452,14 @@ fun Dropdown(
                         contentDescription = "dropdown"
                     );
                 }
-            }
-        );
-        DropdownMenu(
-            expanded = expanded.value,
-            onDismissRequest = { expanded.value = false }
-        ) {
+            });
+        DropdownMenu(expanded = expanded.value, onDismissRequest = { expanded.value = false }) {
             options.forEach { option ->
-                DropdownMenuItem(
-                    onClick = {
-                        selectedOption.value = option;
-                        expanded.value = false;
-                        onSelected?.invoke(option);
-                    },
-                    text = { Text(option) }
-                );
+                DropdownMenuItem(onClick = {
+                    selectedOption.value = option;
+                    expanded.value = false;
+                    onSelected?.invoke(option);
+                }, text = { Text(option) });
             }
         }
     }

@@ -8,6 +8,7 @@ import androidx.navigation.NavController
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.ion606.workoutapp.helpers.URLHelpers
+import com.ion606.workoutapp.screens.user.Screen
 import org.json.JSONObject
 
 private const val TAG = "authManager"
@@ -96,8 +97,7 @@ class AuthManager(private val context: Context, private val sm: SyncManager) {
         // failed to clear the token, but that doesn't matter for the user
         if (!r.first) Log.e(TAG, "Failed to logout: ${r.second}")
         clearAuthCache(true)
-        navController.navigate("login_signup")
-
+        navController.navigate(Screen.RestartApp.route)
     }
 
     suspend fun refreshToken(): Boolean {

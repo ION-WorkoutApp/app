@@ -161,7 +161,7 @@ class SyncManager(private var baseURL: String? = null, private var context: Cont
 
                                 // Launch a coroutine to refresh the token
                                 CoroutineScope(Dispatchers.IO).launch {
-                                    val refreshed = authManager!!.refreshToken()
+                                    val refreshed = authManager.refreshToken()
                                     if (refreshed) {
                                         sendData(payload, endpoint, path, method, authManager).let {
                                             // don't use extractResponseMessage because it might be smth else?

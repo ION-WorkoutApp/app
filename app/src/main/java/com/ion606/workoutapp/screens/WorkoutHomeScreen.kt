@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.R
+import com.ion606.workoutapp.screens.user.Screen
 
 
 private const val TAG = "WorkoutHomeScreen"
@@ -87,19 +88,19 @@ fun WorkoutBottomBar(navController: NavController, isActive: Int = 0) {
             IconButtonWithLabel(
                 iconResId = R.drawable.ic_workout,
                 label = "Workout",
-                onClick = { navController.navigate("workout") },
+                onClick = { navController.navigate(Screen.Workout.route) },
                 isActive = (isActive == 0)
             )
             IconButtonWithLabel(
                 iconResId = R.drawable.ic_log,
                 label = "Log",
-                onClick = { navController.navigate("log") },
+                onClick = { navController.navigate(Screen.Log.route) },
                 isActive = (isActive == 1)
             )
             IconButtonWithLabel(
                 iconResId = R.drawable.ic_profile,
                 label = "Profile",
-                onClick = { navController.navigate("profile") },
+                onClick = { navController.navigate(Screen.Profile.route) },
                 isActive = (isActive == 2)
             )
         }

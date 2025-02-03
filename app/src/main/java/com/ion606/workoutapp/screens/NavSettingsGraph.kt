@@ -49,21 +49,26 @@ fun SettingsNavGraph(
         modifier = Modifier.padding(innerPadding)
     ) {
         // Settings Screens
-        composable(Screen.MasterSettings.route) {
-            MasterSettingsScreen(navController)
+        composable(Screen.Profile.route) {
+            MasterSettingsScreen(dataManager, navController)
         }
+
         composable(Screen.PersonalInfo.route) {
             PersonalInfoScreen(navController, userManager)
         }
+
         composable(Screen.GeneralPreferences.route) {
             GeneralPreferencesScreen(navController, userManager)
         }
+
         composable(Screen.Notifications.route) {
             NotificationsScreen(navController, userManager)
         }
+
         composable(Screen.SocialPreferences.route) {
             SocialPreferencesScreen(navController, userManager)
         }
+
         composable(Screen.DangerZone.route) {
             val user = userManager.getAllUserData() ?: return@composable
             DangerZoneScreen(userManager, navController, context, user)
@@ -77,6 +82,7 @@ fun SettingsNavGraph(
                 else navController.navigate(Screen.LoginSignup.route)
             }
         }
+
         composable(Screen.Details.route) {
             if (!runDebugChecks.value) runDebugChecks.value = true
             DetailsScreen(
@@ -88,13 +94,17 @@ fun SettingsNavGraph(
                 nhelper
             )
         }
+
         composable(Screen.LoginSignup.route) { LoginSignupScreen(navController) }
+
         composable(Screen.Signup.route) { Signup(dataManager, navController) }
+
         composable(Screen.PermissionsRedirect.route) {
             permissions.PermissionsScreen(
                 context, navController, true
             )
         }
+
         composable(Screen.Login.route) {
             // Singleton instance
             LoginScreen(
@@ -103,32 +113,35 @@ fun SettingsNavGraph(
                 userManager
             )
         }
+
         composable(Screen.Workout.route) {
             WorkoutHomeScreen(navController)
         }
+
         composable(Screen.ActiveWorkout.route) {
             ExerciseScreen.CreateScreen(
                 userManager, sm, dao, navController, context, nhelper
             )
         }
+
         composable(Screen.RestartApp.route) {
             context.finish()
             context.startActivity(context.intent)
         }
+
         composable(Screen.ExitApp.route) { context.finish() }
+
         composable(Screen.Log.route) {
             LogScreen.CreateScreen(
                 userManager, sm, navController, context
             )
         }
-        composable(Screen.Profile.route) {
-            MasterSettingsScreen(navController)
-        }
+
         composable(Screen.Permissions.route) {
             permissions.PermissionsScreen(context, navController)
         }
 
-        // User Settings Screens (if different from above)
+        // User Settings Screens
         composable(Screen.AccountSettings.route) {
             PersonalInfoScreen(navController, userManager)
         }
