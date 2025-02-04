@@ -18,7 +18,7 @@ import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.activeExercise.ExerciseScreen
-import com.ion606.workoutapp.screens.activeExercise.SuperSetDao
+import com.ion606.workoutapp.dataObjects.SuperSetDao
 import com.ion606.workoutapp.screens.logs.LogScreen
 import com.ion606.workoutapp.screens.user.DangerZoneScreen
 import com.ion606.workoutapp.screens.user.GeneralPreferencesScreen

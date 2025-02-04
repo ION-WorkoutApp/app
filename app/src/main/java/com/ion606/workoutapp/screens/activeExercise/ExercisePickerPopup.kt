@@ -50,6 +50,8 @@ import com.ion606.workoutapp.dataObjects.ExerciseFilter
 import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.ExercisePickerState
 import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
+import com.ion606.workoutapp.dataObjects.SuperSet
+import com.ion606.workoutapp.dataObjects.SuperSetDao
 import com.ion606.workoutapp.dataObjects.rememberExercisePickerState
 import com.ion606.workoutapp.helpers.Listeners.Companion.LazyColumnWithBottomDetection
 import com.ion606.workoutapp.helpers.UnitConverters

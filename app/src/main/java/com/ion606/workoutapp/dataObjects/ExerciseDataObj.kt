@@ -21,7 +21,6 @@ import com.google.gson.JsonPrimitive
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
 import com.google.gson.reflect.TypeToken
-import com.ion606.workoutapp.screens.activeExercise.SuperSet
 import kotlinx.coroutines.flow.Flow
 import java.lang.reflect.Type
 import java.util.UUID
@@ -174,6 +173,23 @@ interface ActiveExerciseDao {
     suspend fun size(): Int
 }
 
+class ActiveExerciseExport(
+    val id: String = UUID.randomUUID().toString(),
+    val exercise: String, // for the ID
+    val sets: Int,
+    val setsDone: Int,
+    val superset: SuperSet? = null,
+    val inset: MutableList<ExerciseSetDataObj>? = null,
+    val weight: MutableList<ExerciseSetDataObj>? = null,
+    val isDone: Boolean = false,
+    val restTime: Int = 0,
+    val caloriesBurned: Double = 0.0,
+    val duration: Int = 0
+) {
+    fun fromActiveExercise(ac: ActiveExercise) {
+
+    }
+}
 
 @Entity
 data class ActiveExercise(
@@ -287,6 +303,10 @@ data class ActiveExercise(
         result = 31 * result + weight.hashCode()
         return result
     }
+
+//    fun export(): String {
+//
+//    }
 }
 
 

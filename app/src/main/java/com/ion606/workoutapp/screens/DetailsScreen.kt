@@ -35,7 +35,7 @@ import com.ion606.workoutapp.helpers.LoadingScreen
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.UserManager
-import com.ion606.workoutapp.screens.activeExercise.SuperSetDao
+import com.ion606.workoutapp.dataObjects.SuperSetDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

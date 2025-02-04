@@ -53,6 +53,8 @@ import com.google.gson.Gson
 import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.ActiveExerciseDao
 import com.ion606.workoutapp.dataObjects.SavedWorkoutResponse
+import com.ion606.workoutapp.dataObjects.SuperSet
+import com.ion606.workoutapp.dataObjects.SuperSetDao
 import com.ion606.workoutapp.dataObjects.Workout
 import com.ion606.workoutapp.dataObjects.WorkoutViewModel
 import com.ion606.workoutapp.dataObjects.WorkoutViewModelFactory
@@ -236,10 +238,10 @@ class ExerciseScreen {
                             return@launch
                         }
 
-                        val exercises = dao.getAll()
+                        val superSetsMaster = dao.getAll()
                         val totalTime = workoutTime.time
 
-                        if (!exercises.any { it.isDone }) {
+                        if (!superSetsMaster.any { it.isDone }) {
                             Log.d(TAG, "No exercises completed")
                             navController.navigate("home")
                             endWorkout.intValue = 0
@@ -247,7 +249,7 @@ class ExerciseScreen {
                         }
 
                         val toSend = mapOf(
-                            "supersets" to exercises.map {
+                            "supersets" to superSetsMaster.map {
                                 it.copy(exercises = it.exercises.map { e ->
                                     UnitConverters.convertBack(
                                         e, userManager
@@ -272,7 +274,7 @@ class ExerciseScreen {
                             Log.d(TAG, "Successfully removed all exercises")
                         }
 
-                        finalExercises.addAll(exercises)
+                        finalExercises.addAll(superSetsMaster)
                         endWorkout.intValue = 0
                     }
                 }

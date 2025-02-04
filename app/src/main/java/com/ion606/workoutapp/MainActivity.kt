@@ -32,7 +32,7 @@ import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.PermissionsManager
 import com.ion606.workoutapp.screens.SettingsNavGraph
-import com.ion606.workoutapp.screens.activeExercise.WorkoutDatabase
+import com.ion606.workoutapp.dataObjects.WorkoutDatabase
 import com.ion606.workoutapp.screens.user.Screen
 import com.ion606.workoutapp.ui.theme.WorkoutAppTheme
 

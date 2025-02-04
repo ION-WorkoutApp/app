@@ -19,7 +19,7 @@ import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
 import com.ion606.workoutapp.dataObjects.ParsedExercise
 import com.ion606.workoutapp.dataObjects.Workout
 import com.ion606.workoutapp.dataObjects.convertActiveExerciseToParsed
-import com.ion606.workoutapp.screens.activeExercise.SuperSet
+import com.ion606.workoutapp.dataObjects.SuperSet
 
 
 @Composable

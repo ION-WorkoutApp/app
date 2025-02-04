@@ -1,7 +1,6 @@
 package com.ion606.workoutapp.dataObjects
 
 import com.google.gson.annotations.SerializedName
-import com.ion606.workoutapp.screens.activeExercise.SuperSet
 
 data class ParsedActiveExercise(
     @SerializedName("_id") val id: String,

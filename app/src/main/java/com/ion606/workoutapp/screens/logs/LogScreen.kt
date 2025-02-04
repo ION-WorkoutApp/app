@@ -53,7 +53,7 @@ import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.WorkoutBottomBar
-import com.ion606.workoutapp.screens.activeExercise.SuperSet
+import com.ion606.workoutapp.dataObjects.SuperSet
 import java.time.ZonedDateTime
 
 // Utility Extensions

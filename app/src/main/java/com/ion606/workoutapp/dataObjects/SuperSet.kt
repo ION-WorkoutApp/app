@@ -1,4 +1,4 @@
-package com.ion606.workoutapp.screens.activeExercise
+package com.ion606.workoutapp.dataObjects
 
 import android.content.Context
 import android.util.Log
@@ -16,18 +16,8 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Update
 import com.google.gson.Gson
-import com.ion606.workoutapp.dataObjects.ActiveExercise
-import com.ion606.workoutapp.dataObjects.ActiveExerciseDao
-import com.ion606.workoutapp.dataObjects.ActiveExerciseListConverter
-import com.ion606.workoutapp.dataObjects.Exercise
-import com.ion606.workoutapp.dataObjects.ExerciseMeasureTypeConverter
-import com.ion606.workoutapp.dataObjects.ExerciseSetDataObj
-import com.ion606.workoutapp.dataObjects.SetListConverter
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
-
-
-private const val TAG = "SuperSet"
 
 @Entity
 data class SuperSet(
@@ -113,6 +103,11 @@ data class SuperSet(
         // if we are on the last exercise, go to the first exercise
         this.getCurrentExercise()?.let { this.setCurrentExercise(it) }
         return this.getCurrentExercise()
+    }
+
+    // export all exercises without the `exercise` object (swap with ID)
+    fun export() {
+
     }
 }
 
@@ -216,5 +211,4 @@ class SuperSetConverter {
         return gson.fromJson(data, SuperSet::class.java)
     }
 }
-
 

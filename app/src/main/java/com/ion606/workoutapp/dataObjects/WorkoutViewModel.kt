@@ -8,8 +8,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ion606.workoutapp.screens.activeExercise.SuperSet
-import com.ion606.workoutapp.screens.activeExercise.SuperSetDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

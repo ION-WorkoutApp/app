@@ -2,7 +2,6 @@ package com.ion606.workoutapp.dataObjects
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.ion606.workoutapp.screens.activeExercise.SuperSetDao
 
 
 class WorkoutViewModelFactory(

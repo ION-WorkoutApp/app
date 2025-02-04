@@ -58,6 +58,7 @@ import androidx.compose.ui.zIndex
 import com.ion606.workoutapp.R
 import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
+import com.ion606.workoutapp.dataObjects.SuperSet
 import com.ion606.workoutapp.dataObjects.WorkoutViewModel
 import kotlinx.coroutines.launch
 import kotlin.collections.component1
