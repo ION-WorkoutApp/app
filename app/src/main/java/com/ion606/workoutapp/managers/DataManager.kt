@@ -58,6 +58,18 @@ class DataManager(context: Context, private val sm: SyncManager) {
         return sm.sendData(emptyMap(), path = "isindebugmode", method = "HEAD", endpoint = url);
     }
 
+    suspend fun testConfCode(email: String, code: String, baseURL: String): Pair<Boolean, String?> {
+        val data = mapOf("email" to email, "code" to code)
+        val (success, message) = sm.sendData(data, "$baseURL/auth/testcode")
+        return Pair(success, message as String?)
+    }
+
+    suspend fun genCode(email: String, baseURL: String): Pair<Boolean, String?> {
+        val data = mapOf("email" to email)
+        val (success, message) = sm.sendData(data, "$baseURL/auth/gencode")
+        return Pair(success, message as String?)
+    }
+
     suspend fun refreshToken(): Boolean {
         return this.authManager.refreshToken()
     }

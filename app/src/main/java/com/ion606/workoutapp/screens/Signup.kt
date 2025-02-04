@@ -1,5 +1,6 @@
 package com.ion606.workoutapp.screens;
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -131,6 +132,9 @@ fun Signup(dataManager: DataManager, navController: NavController) {
 
     val exerciseDifficultyOptions = listOf("beginner", "intermediate", "advanced");
     val notificationFrequencyOptions = listOf("daily", "weekly", "none");
+
+    val counter = remember { mutableStateOf(0) };
+    val confirmationCode = remember { mutableStateOf("") };
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -327,8 +331,72 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                 }
 
                 4 -> {
-                    // screen 4: account creation
+                    LaunchedEffect(Unit) {
+                        dataManager.genCode(email.value, serverUrl.value);
+                    }
 
+                    // screen 4: email confirmation code
+                    // state for confirmation code input
+                    val sendConfCode = remember { mutableStateOf(false) };
+                    val showErrorAlert = remember { mutableStateOf(false) };
+
+                    if (sendConfCode.value) {
+                        LaunchedEffect(Unit) {
+                            val r = dataManager.testConfCode(
+                                email.value, confirmationCode.value, serverUrl.value
+                            );
+                            if (!r.first) statusSubMessage.value =
+                                "Incorrect Confirmation Code, you have ${3 - counter.value} attempts left";
+                            else currentStep.value = 5;
+                            sendConfCode.value = false;
+                        }
+                    } else if (showErrorAlert.value) {
+                        Alerts.ShowAlert(title = "error",
+                            text = "you have entered the wrong confirmation code too many times. please try again later.",
+                            oneButton = true,
+                            onClick = {
+                                showErrorAlert.value = false;
+                                navController.navigate(Screen.RestartApp.route);
+                            });
+                    }
+
+                    Text("email confirmation", style = MaterialTheme.typography.headlineMedium);
+                    Spacer(modifier = Modifier.height(24.dp));
+
+                    OutlinedTextField(
+                        value = confirmationCode.value,
+                        onValueChange = { confirmationCode.value = it },
+                        label = { Text("confirmation code") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1
+                    );
+
+                    Spacer(modifier = Modifier.height(16.dp));
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Button(onClick = { currentStep.value = 3 }) {
+                            Text("back");
+                        }
+                        Button(onClick = {
+                            if (counter.value >= 3) showErrorAlert.value = true;
+                            else {
+                                sendConfCode.value = true;
+                                counter.value++;
+                            }
+                        }) {
+                            Text("confirm");
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp));
+                    Text(statusSubMessage.value, style = MaterialTheme.typography.headlineMedium);
+                }
+
+                5 -> {
+                    // screen 4: account creation
                     Text(statusMessage.value, style = MaterialTheme.typography.headlineLarge);
                     Spacer(modifier = Modifier.height(16.dp));
                     Text(statusSubMessage.value, style = MaterialTheme.typography.headlineMedium);
@@ -337,17 +405,23 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         Alerts.ShowAlert(title = "debug mode",
                             text = "debug mode is enabled on the server, this means that your data is unencrypted and can be read by admins. are you sure you want to continue?",
                             onClick = {
-                                if (it) confed.value = true;
-                                else navController.navigate(Screen.Home.route);
+                                if (it) {
+                                    confed.value = true;
+                                    statusSubMessage.value = "";
+                                    showDebugAlert.value = false;
+                                } else navController.navigate(Screen.Home.route);
                             });
                     }
 
-                    LaunchedEffect(Unit) {
+                    LaunchedEffect("FinalSignupCheck") {
                         // debug check
                         val r = dataManager.checkDebugMode(serverUrl.value);
+
                         if (r.first) showDebugAlert.value = true;
                         else confed.value = true
 
+                    }
+                    LaunchedEffect(confed.value) {
                         // sloppy fix
                         if (confed.value) {
                             statusMessage.value = "creating account...";
@@ -394,6 +468,7 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                             }
 
                             val userData = mapOf(
+                                "code" to confirmationCode.value,
                                 "name" to name.value.trim(),
                                 "email" to email.value.trim(),
                                 "password" to password.value.trim(),
@@ -412,17 +487,19 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                                 "notifications" to notifications,
                                 "socialPreferences" to socialPreferences
                             );
+
                             // create account via dataManager
                             val (success, response) = dataManager.createAccount(
                                 userData, serverUrl.value
                             );
+
                             if (success) {
                                 navController.navigate("details");
                             } else {
                                 statusMessage.value = "signup failed!";
                                 statusSubMessage.value = response ?: "unknown error";
                             }
-                        }
+                        } else Log.d("SignupScreen", "not confed")
                     }
                 }
             }

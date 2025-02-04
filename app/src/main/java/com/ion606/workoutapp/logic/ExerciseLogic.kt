@@ -76,7 +76,7 @@ fun StartTimer(
     // Start the timer function
     fun startTimer(time: Int) {
         Log.d("TIMER", "started timer $headerText with $remainingTime seconds")
-
+        
         timer?.cancel() // Cancel any existing timer
         timer = object : CountDownTimer(time * 1000L, 1000L) {
             override fun onTick(millisUntilFinished: Long) {
