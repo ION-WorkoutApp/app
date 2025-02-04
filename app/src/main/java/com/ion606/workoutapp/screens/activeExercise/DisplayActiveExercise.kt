@@ -318,11 +318,8 @@ class DisplayActiveExercise {
                         pManager.setProgress(restTimer.intValue, restTimer.intValue - remainingTime, false)
                         nhelper.updateNotification(pManager);
                     },
-                    onFinishCB = { didFinish ->
-                        if (!didFinish) {
-                            Log.d(TAG, "Rest timer was cancelled")
-                            return@StartTimer
-                        }
+                    onFinishCB = { _ ->
+                        // it doesn't matter if the timer was stopped or finished bc the time needs to be logged either way
 
                         // remove progress bar
                         pManager?.setProgress(0, 0, false)
