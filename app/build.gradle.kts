@@ -83,7 +83,9 @@ dependencies {
     implementation(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.room.ktx)
-    implementation("androidx.work:work-runtime-ktx:$work_version")
+    implementation(libs.mpandroidchart)
+    implementation(libs.compose)
+    implementation("androidx.work:work-runtime-ktx:$work_version") // DO NOT CHANGE TO LIB FUNC
     ksp(libs.room.compiler)
     ksp(libs.androidx.room.ktx)
     testImplementation(libs.junit)

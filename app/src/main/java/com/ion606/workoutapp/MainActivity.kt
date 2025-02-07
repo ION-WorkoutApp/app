@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
+import com.ion606.workoutapp.dataObjects.WorkoutDatabase
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.helpers.CheckIfInDebugMode
 import com.ion606.workoutapp.helpers.NotificationManager
@@ -32,7 +34,6 @@ import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.PermissionsManager
 import com.ion606.workoutapp.screens.SettingsNavGraph
-import com.ion606.workoutapp.dataObjects.WorkoutDatabase
 import com.ion606.workoutapp.screens.user.Screen
 import com.ion606.workoutapp.ui.theme.WorkoutAppTheme
 
@@ -93,7 +94,9 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(topBar = {
                     if (serverInDebugMode.value) TopScreenMessageText("Server is in debug mode - your data is unencrypted!")
-                }) { innerPadding ->
+                },
+                    modifier = Modifier.fillMaxSize(),
+                ) { innerPadding ->
                     SettingsNavGraph(
                         navController,
                         userManager,

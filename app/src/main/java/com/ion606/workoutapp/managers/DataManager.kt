@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.navigation.NavController
+import com.google.gson.Gson
+import com.ion606.workoutapp.dataObjects.User.UserStats
 
 private const val TAG = "dataManager"
 
@@ -17,11 +19,13 @@ class DataManager(context: Context, private val sm: SyncManager) {
         return !authManager.loadToken().isNullOrEmpty()
     }
 
-    fun loadURL() : String? {
+    fun loadURL(): String? {
         return sm.getBaseURL()
     }
 
-    suspend fun login(data: Map<String, String>? = null, baseURL: String? = null): AuthManager.AuthResult {
+    suspend fun login(
+        data: Map<String, String>? = null, baseURL: String? = null
+    ): AuthManager.AuthResult {
         return authManager.login(data, baseURL, this);
     }
 
@@ -72,5 +76,20 @@ class DataManager(context: Context, private val sm: SyncManager) {
 
     suspend fun refreshToken(): Boolean {
         return this.authManager.refreshToken()
+    }
+
+    sealed class Result {
+        data class Success(val data: UserStats) : Result()
+        data class Error(val message: String) : Result()
+    }
+
+    suspend fun getUserStats(isRaw: Boolean = false): Result {
+        val r = this.sm.sendData(payload = emptyMap(), path = "udata/stats", method = "GET")
+        return if (r.first && isRaw) Result.Error(r.second as String)
+        else if (r.first) Result.Success(Gson().fromJson(r.second as String, UserStats::class.java))
+        else {
+            Log.d(TAG, "Failed to get user stats")
+            Result.Error("Failed to get user stats")
+        }
     }
 }

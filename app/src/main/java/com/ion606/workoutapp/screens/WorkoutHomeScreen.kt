@@ -59,6 +59,15 @@ fun WorkoutHomeScreen(navController: NavController) {
             ) {
                 Text("Generate Workout for Me")
             }
+
+            Button(
+                onClick = { navController.navigate(Screen.UserStatsScreen.route) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Text("View Stats")
+            }
         }
     }
 }

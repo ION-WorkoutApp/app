@@ -57,6 +57,7 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object Permissions : Screen("permissions")
     data object AccountSettings : Screen("accountSettings")
+    data object UserStatsScreen : Screen("userStatsScreen")
 
     // Fallback Route
     data object NotFound : Screen("not_found")
