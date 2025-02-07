@@ -23,7 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.R
-import com.ion606.workoutapp.screens.user.Screen
+import com.ion606.workoutapp.screens.settings.Screen
 
 
 private const val TAG = "WorkoutHomeScreen"

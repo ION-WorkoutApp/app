@@ -20,13 +20,14 @@ import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
 import com.ion606.workoutapp.screens.activeExercise.ExerciseScreen
 import com.ion606.workoutapp.screens.logs.LogScreen
-import com.ion606.workoutapp.screens.user.DangerZoneScreen
-import com.ion606.workoutapp.screens.user.GeneralPreferencesScreen
-import com.ion606.workoutapp.screens.user.MasterSettingsScreen
-import com.ion606.workoutapp.screens.user.NotificationsScreen
-import com.ion606.workoutapp.screens.user.PersonalInfoScreen
-import com.ion606.workoutapp.screens.user.Screen
-import com.ion606.workoutapp.screens.user.SocialPreferencesScreen
+import com.ion606.workoutapp.screens.settings.DangerZoneScreen
+import com.ion606.workoutapp.screens.settings.GeneralPreferencesScreen
+import com.ion606.workoutapp.screens.settings.MasterSettingsScreen
+import com.ion606.workoutapp.screens.settings.NotificationsScreen
+import com.ion606.workoutapp.screens.settings.PersonalInfoScreen
+import com.ion606.workoutapp.screens.settings.Screen
+import com.ion606.workoutapp.screens.settings.SocialPreferencesScreen
+import com.ion606.workoutapp.screens.statistics.UserStatsScreen
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)

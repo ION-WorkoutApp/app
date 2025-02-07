@@ -31,7 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.ion606.workoutapp.dataObjects.ActiveExercise
-import com.ion606.workoutapp.screens.user.Screen
+import com.ion606.workoutapp.screens.settings.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

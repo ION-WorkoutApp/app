@@ -8,7 +8,7 @@ import androidx.navigation.NavController
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.ion606.workoutapp.helpers.URLHelpers
-import com.ion606.workoutapp.screens.user.Screen
+import com.ion606.workoutapp.screens.settings.Screen
 import org.json.JSONObject
 
 private const val TAG = "authManager"

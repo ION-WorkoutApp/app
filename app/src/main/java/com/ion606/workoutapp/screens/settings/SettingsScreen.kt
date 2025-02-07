@@ -1,4 +1,4 @@
-package com.ion606.workoutapp.screens.user
+package com.ion606.workoutapp.screens.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

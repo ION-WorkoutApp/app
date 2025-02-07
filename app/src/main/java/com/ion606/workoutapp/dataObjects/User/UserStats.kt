@@ -6,7 +6,24 @@ data class UserStats(
     val calories: Calories,
     val exerciseDistribution: ExerciseDistribution,
     val performance: Performance,
-    val consistency: Consistency
+    val consistency: Consistency,
+    val muscleRecovery: MuscleRecovery
+)
+
+data class MuscleRecoverIndividual(
+    val lastUsed: String,
+    val recoveryPercentage: Float,
+    val personalizedRecoveryHours: Float
+)
+
+data class MuscleRecovery(
+    val chest: MuscleRecoverIndividual,
+    val back: MuscleRecoverIndividual,
+    val legs: MuscleRecoverIndividual,
+    val arms: MuscleRecoverIndividual,
+    val core: MuscleRecoverIndividual,
+    val shoulders: MuscleRecoverIndividual,
+    val lastUpdated: String
 )
 
 data class OverallActivity(

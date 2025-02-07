@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.managers.DataManager
-import com.ion606.workoutapp.screens.user.Screen
+import com.ion606.workoutapp.screens.settings.Screen
 
 @Composable
 fun Signup(dataManager: DataManager, navController: NavController) {
