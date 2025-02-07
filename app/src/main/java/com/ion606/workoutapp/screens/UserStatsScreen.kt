@@ -117,7 +117,7 @@ class UserStatsScreen {
                         modifier = Modifier
                             .padding(0.dp)
                             .padding(innerPadding),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // 1. overall activity card - grid replacement
                         item {
@@ -205,11 +205,15 @@ class UserStatsScreen {
                                         title = "By Body Part"
                                     )
 
+                                    Spacer(modifier = Modifier.height(16.dp));
+
                                     // exercise type distribution
                                     HorizontalBarChart(
                                         data = stats.exerciseDistribution.byType,
                                         title = "By Exercise Type"
                                     )
+
+                                    Spacer(modifier = Modifier.height(30.dp));
 
                                     // top exercises
                                     Text(
@@ -318,7 +322,7 @@ class UserStatsScreen {
             val yMax = if (rawYMax == 0) 1 else rawYMax
             val yMin = 0
 
-            // add a border for debugging the canvas boundaries
+            // add a border to debug the canvas boundaries
             Box(
                 modifier = Modifier
                     .height(200.dp)
@@ -399,7 +403,7 @@ class UserStatsScreen {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 60.dp, top = 20.dp)
                 )
 
                 Box(
@@ -416,7 +420,7 @@ class UserStatsScreen {
                                 startAngle = startAngle,
                                 sweepAngle = sweep,
                                 useCenter = false,
-                                style = Stroke(width = innerRadius, cap = StrokeCap.Round)
+                                style = Stroke(width = innerRadius, cap = StrokeCap.Butt)
                             );
                             startAngle += sweep;
                         }
@@ -430,8 +434,8 @@ class UserStatsScreen {
                 }
 
                 // legend
-                Column(modifier = Modifier.padding(top = 8.dp)) {
-                    data.entries.forEachIndexed { _, (label, value) ->
+                Column(modifier = Modifier.padding(top = 40.dp)) {
+                    data.entries.sortedByDescending { it.value }.forEachIndexed { _, (label, value) ->
                         LegendItem(
                             label = label,
                             value = value,
