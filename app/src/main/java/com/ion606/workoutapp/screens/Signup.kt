@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ion606.workoutapp.dataObjects.ServerConfigs
 import com.ion606.workoutapp.helpers.Alerts
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.screens.settings.Screen
@@ -130,11 +131,29 @@ fun Signup(dataManager: DataManager, navController: NavController) {
     )
     val comfortLevels = listOf("Beginner", "Intermediate", "Advanced")
 
-    val exerciseDifficultyOptions = listOf("beginner", "intermediate", "advanced");
-    val notificationFrequencyOptions = listOf("daily", "weekly", "none");
+    val getServerConfigs = remember { mutableStateOf(false) };
 
     val counter = remember { mutableStateOf(0) };
     val confirmationCode = remember { mutableStateOf("") };
+    val serverConfig = remember { mutableStateOf(ServerConfigs()) };
+
+    val alertMsg = remember { mutableStateOf("") };
+    if (alertMsg.value.isNotEmpty()) {
+        Alerts.ShowAlert(title = "error", text = alertMsg.value, oneButton = true, onClick = {
+            alertMsg.value = ""
+        });
+    }
+
+    LaunchedEffect(getServerConfigs.value) {
+        val r = dataManager.getServerConfig(serverUrl.value);
+        when {
+            r is DataManager.ServerConfigResult.Success -> {
+                serverConfig.value = r.data;
+                currentStep.value = 2
+            }
+            else -> alertMsg.value = "Failed to get server config";
+        }
+    }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -148,11 +167,15 @@ fun Signup(dataManager: DataManager, navController: NavController) {
             when (currentStep.value) {
                 1 -> {
                     // screen 1: basic account info
-                    Text("create your account", style = MaterialTheme.typography.headlineMedium);
+                    Text(
+                        "create your account",
+                        style = MaterialTheme.typography.headlineMedium
+                    );
 
                     Spacer(modifier = Modifier.height(24.dp));
 
-                    OutlinedTextField(value = name.value,
+                    OutlinedTextField(
+                        value = name.value,
                         onValueChange = { name.value = it },
                         label = { Text("name") },
                         modifier = Modifier.fillMaxWidth(),
@@ -161,7 +184,8 @@ fun Signup(dataManager: DataManager, navController: NavController) {
 
                     Spacer(modifier = Modifier.height(16.dp));
 
-                    OutlinedTextField(value = email.value,
+                    OutlinedTextField(
+                        value = email.value,
                         onValueChange = { email.value = it },
                         label = { Text("email") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -194,7 +218,8 @@ fun Signup(dataManager: DataManager, navController: NavController) {
 
                     Spacer(modifier = Modifier.height(24.dp));
 
-                    OutlinedTextField(value = serverUrl.value,
+                    OutlinedTextField(
+                        value = serverUrl.value,
                         onValueChange = { serverUrl.value = it },
                         label = { Text("Server URL") },
                         modifier = Modifier.fillMaxWidth(),
@@ -202,17 +227,35 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                     );
 
                     Button(
-                        onClick = { currentStep.value = 2 }, modifier = Modifier.fillMaxWidth()
+                        onClick = { getServerConfigs.value = true },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("next");
                     }
                 }
 
                 2 -> {
+                    // to get here the server config must be fetched successfully
+                    if (!serverConfig.value.allowSignups) {
+                        Text(
+                            "Signups are disabled on this server",
+                            style = MaterialTheme.typography.headlineMedium
+                        );
+                        Spacer(modifier = Modifier.height(24.dp));
+                        Button(onClick = { navController.navigate(Screen.Home.route) }) {
+                            Text("back");
+                        }
+                        return@Column;
+                    }
+
                     // screen 2: personal info
-                    Text("personal information", style = MaterialTheme.typography.headlineMedium);
+                    Text(
+                        "personal information",
+                        style = MaterialTheme.typography.headlineMedium
+                    );
                     Spacer(modifier = Modifier.height(24.dp));
-                    OutlinedTextField(value = age.value,
+                    OutlinedTextField(
+                        value = age.value,
                         onValueChange = { age.value = it },
                         label = { Text("age") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -224,7 +267,8 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         label = "gender", options = genderOptions, selectedOption = gender
                     );
                     Spacer(modifier = Modifier.height(16.dp));
-                    OutlinedTextField(value = height.value,
+                    OutlinedTextField(
+                        value = height.value,
                         onValueChange = { height.value = it },
                         label = { Text("height (cm)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -232,7 +276,8 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         maxLines = 1
                     );
                     Spacer(modifier = Modifier.height(16.dp));
-                    OutlinedTextField(value = weight.value,
+                    OutlinedTextField(
+                        value = weight.value,
                         onValueChange = { weight.value = it },
                         label = { Text("weight ${weightUnit.value}") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -324,7 +369,10 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         Button(onClick = { currentStep.value = 2 }) {
                             Text("back");
                         }
-                        Button(onClick = { currentStep.value = 4 }) {
+                        Button(onClick = {
+                            if (serverConfig.value.requireEmailVerification) currentStep.value = 4;
+                            else currentStep.value = 5;
+                        }) {
                             Text("finish");
                         }
                     }
@@ -392,14 +440,20 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                     }
 
                     Spacer(modifier = Modifier.height(16.dp));
-                    Text(statusSubMessage.value, style = MaterialTheme.typography.headlineMedium);
+                    Text(
+                        statusSubMessage.value,
+                        style = MaterialTheme.typography.headlineMedium
+                    );
                 }
 
                 5 -> {
                     // screen 4: account creation
                     Text(statusMessage.value, style = MaterialTheme.typography.headlineLarge);
                     Spacer(modifier = Modifier.height(16.dp));
-                    Text(statusSubMessage.value, style = MaterialTheme.typography.headlineMedium);
+                    Text(
+                        statusSubMessage.value,
+                        style = MaterialTheme.typography.headlineMedium
+                    );
 
                     if (showDebugAlert.value) {
                         Alerts.ShowAlert(title = "debug mode",
@@ -427,16 +481,20 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                             statusMessage.value = "creating account...";
 
                             // assemble general preferences
-                            val generalPreferences = mapOf("activityLevel" to activityLevel.value,
-                                "preferredWorkoutTime" to preferredWorkoutTime.value,
-                                "workoutFrequency" to (workoutFrequency.value.trim().toIntOrNull()
-                                    ?: 3),
-                                "injuriesOrLimitations" to injuriesOrLimitations.value.split(",")
-                                    .map { it.trim() }.filter { it.isNotEmpty() },
-                                "equipmentAccess" to equipmentAccess.value.split(",")
-                                    .map { it.trim() }.filter { it.isNotEmpty() },
-                                "preferredWorkoutEnvironment" to preferredWorkoutEnvironment.value
-                            );
+                            val generalPreferences =
+                                mapOf("activityLevel" to activityLevel.value,
+                                    "preferredWorkoutTime" to preferredWorkoutTime.value,
+                                    "workoutFrequency" to (workoutFrequency.value.trim()
+                                        .toIntOrNull()
+                                        ?: 3),
+                                    "injuriesOrLimitations" to injuriesOrLimitations.value.split(
+                                        ","
+                                    )
+                                        .map { it.trim() }.filter { it.isNotEmpty() },
+                                    "equipmentAccess" to equipmentAccess.value.split(",")
+                                        .map { it.trim() }.filter { it.isNotEmpty() },
+                                    "preferredWorkoutEnvironment" to preferredWorkoutEnvironment.value
+                                );
                             // assemble optional preferences (using defaults if not set)
                             val workoutPreferences = mapOf(
                                 "preferredWorkoutDuration" to (preferredWorkoutDuration.value.trim()
@@ -456,10 +514,13 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                                 "notificationFrequency" to notificationFrequency.value,
                                 "preferredReminderTime" to preferredReminderTime.value
                             );
-                            val socialPreferences = mapOf("socialSharing" to socialSharing.value,
-                                "leaderboardParticipation" to leaderboardParticipation.value,
-                                "badgesAndAchievements" to badgesAndAchievements.value.split(",")
-                                    .map { it.trim() }.filter { it.isNotEmpty() });
+                            val socialPreferences =
+                                mapOf("socialSharing" to socialSharing.value,
+                                    "leaderboardParticipation" to leaderboardParticipation.value,
+                                    "badgesAndAchievements" to badgesAndAchievements.value.split(
+                                        ","
+                                    )
+                                        .map { it.trim() }.filter { it.isNotEmpty() });
 
                             val weightTransformed = if (weightUnit.value == "lbs") {
                                 (weight.value.trim().toIntOrNull() ?: 0) * 0.453592

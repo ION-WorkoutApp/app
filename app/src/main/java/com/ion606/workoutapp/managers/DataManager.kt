@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import androidx.navigation.NavController
 import com.google.gson.Gson
+import com.ion606.workoutapp.dataObjects.ServerConfigs
 import com.ion606.workoutapp.dataObjects.User.UserStats
 
 private const val TAG = "dataManager"
@@ -90,6 +91,20 @@ class DataManager(context: Context, private val sm: SyncManager) {
         else {
             Log.d(TAG, "Failed to get user stats")
             Result.Error("Failed to get user stats")
+        }
+    }
+
+    sealed class ServerConfigResult {
+        data class Success(val data: ServerConfigs) : ServerConfigResult()
+        data class Error(val message: String) : ServerConfigResult()
+    }
+
+    suspend fun getServerConfig(endPoint: String?): ServerConfigResult {
+        val r = this.sm.sendData(endpoint = endPoint, payload = emptyMap(), path = "admin/settings", method = "GET")
+        return if (r.first) ServerConfigResult.Success(Gson().fromJson(r.second as String, ServerConfigs::class.java))
+        else {
+            Log.d(TAG, "Failed to get server config")
+            ServerConfigResult.Error("Failed to get server config")
         }
     }
 }
