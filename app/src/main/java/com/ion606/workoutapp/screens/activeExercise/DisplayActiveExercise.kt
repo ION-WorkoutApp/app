@@ -646,6 +646,10 @@ class DisplayActiveExercise {
                                     delay(300)
 
                                     val ind = itemList.indexOf(setItem)
+                                    if (ind < 0) {
+                                        Log.d(TAG, "Item not found in list")
+                                        return@LaunchedEffect
+                                    }
                                     itemList.remove(setItem)
                                     exercise.weight?.removeAt(ind)
 

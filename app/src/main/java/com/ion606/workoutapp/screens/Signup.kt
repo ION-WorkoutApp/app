@@ -95,7 +95,7 @@ fun Signup(dataManager: DataManager, navController: NavController) {
     val badgesAndAchievements = remember { mutableStateOf("") }; // comma separated
 
     // finish: server setup and status messages
-    val serverUrl = remember { mutableStateOf("https://test.ion606.com") };
+    val serverUrl = remember { mutableStateOf("https://workoutep.ion606.com") };
     val statusMessage = remember { mutableStateOf("creating account...") };
     val statusSubMessage = remember { mutableStateOf("") };
     val showDebugAlert = remember { mutableStateOf(false) };
@@ -144,14 +144,17 @@ fun Signup(dataManager: DataManager, navController: NavController) {
         });
     }
 
-    LaunchedEffect(getServerConfigs.value) {
-        val r = dataManager.getServerConfig(serverUrl.value);
-        when {
-            r is DataManager.ServerConfigResult.Success -> {
-                serverConfig.value = r.data;
-                currentStep.value = 2
+    if (getServerConfigs.value) {
+        LaunchedEffect(Unit) {
+            val r = dataManager.getServerConfig(serverUrl.value);
+            when {
+                r is DataManager.ServerConfigResult.Success -> {
+                    serverConfig.value = r.data;
+                    currentStep.value = 2
+                }
+                else -> alertMsg.value = "Failed to get server config";
             }
-            else -> alertMsg.value = "Failed to get server config";
+            getServerConfigs.value = false;
         }
     }
 
@@ -409,6 +412,14 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                     }
 
                     Text("email confirmation", style = MaterialTheme.typography.headlineMedium);
+
+                    Spacer(modifier = Modifier.height(10.dp));
+
+                    Text(
+                        "a confirmation code has been sent to ${email.value}",
+                        style = MaterialTheme.typography.bodyMedium
+                    );
+
                     Spacer(modifier = Modifier.height(24.dp));
 
                     OutlinedTextField(

@@ -37,6 +37,9 @@ data class SuperSet(
         if (index != -1) {
             exercises[index] = exercise.copy()
         }
+        else {
+            Log.d("EXERCISE", "exercise with id ${exercise.id} not found in superset with id ${this.id}")
+        }
     }
 
     // returns true if the superset is done
