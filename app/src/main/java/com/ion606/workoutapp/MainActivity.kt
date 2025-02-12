@@ -70,9 +70,19 @@ class MainActivity : ComponentActivity() {
 
                 val runDebugChecks = remember { mutableStateOf(false) };
                 val serverInDebugMode = remember { mutableStateOf(false) };
+                val errmsg = remember { mutableStateOf("") }
+                if (errmsg.value.isNotEmpty()) {
+                    Alerts.ShowAlert(
+                        { finish() },
+                        "Error",
+                        errmsg.value
+                    )
+                }
 
-                if (runDebugChecks.value) CheckIfInDebugMode(sm) {
-                    if (it != serverInDebugMode.value) serverInDebugMode.value = it
+                if (runDebugChecks.value) CheckIfInDebugMode(dataManager) {
+                    Log.d("DEBUG", "$it")
+                    if (it == -1) errmsg.value = "Failed to ping server"
+                    else serverInDebugMode.value = (it == 1)
                 }
 
                 if (serverInDebugMode.value) {

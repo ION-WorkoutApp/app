@@ -182,7 +182,12 @@ class SyncManager(private var baseURL: String? = null, private var context: Cont
                                 if (continuation.isActive) continuation.resume(Pair(false, extractResponseMessage(errmsg)))
                                 else null;
                             } else {
-                                if (continuation.isActive) continuation.resume(Pair(false, extractResponseMessage(errmsg)))
+                                // specific case for debug ping
+                                if (path == "isindebugmode") {
+                                    if (continuation.isActive) continuation.resume(Pair(false, response.code.toString()))
+                                    return
+                                }
+                                else if (continuation.isActive) continuation.resume(Pair(false, extractResponseMessage(errmsg)))
                                 else null;
                             }
                         }

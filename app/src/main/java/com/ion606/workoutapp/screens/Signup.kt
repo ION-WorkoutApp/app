@@ -482,9 +482,14 @@ fun Signup(dataManager: DataManager, navController: NavController) {
                         // debug check
                         val r = dataManager.checkDebugMode(serverUrl.value);
 
-                        if (r.first) showDebugAlert.value = true;
-                        else confed.value = true
-
+                        when (r) {
+                            -1 -> {
+                                statusMessage.value = "failed to ping server";
+                                statusSubMessage.value = "please try again later";
+                            }
+                            1 -> showDebugAlert.value = true
+                            else -> confed.value = true
+                        }
                     }
                     LaunchedEffect(confed.value) {
                         // sloppy fix

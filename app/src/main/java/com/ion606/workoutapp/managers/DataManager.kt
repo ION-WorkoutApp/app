@@ -59,8 +59,21 @@ class DataManager(context: Context, private val sm: SyncManager) {
         return sm.pingServer(url)
     }
 
-    suspend fun checkDebugMode(url: String? = this.loadURL()): Pair<Boolean, Any?> {
-        return sm.sendData(emptyMap(), path = "isindebugmode", method = "HEAD", endpoint = url);
+    // Returns 1 if in debug mode, 0 if not, -1 if failed to check
+    suspend fun checkDebugMode(url: String? = this.loadURL()): Int {
+        val r = sm.sendData(emptyMap(), path = "isindebugmode", method = "HEAD", endpoint = url);
+
+        if (r.first) {
+            return 1
+        } else {
+            Log.d(TAG, "Failed to check debug mode - ${r.second.toString()}")
+
+            // 530 for cloudflared error
+            if (r.second.toString().contains("404") || r.second.toString().contains("530")) {
+                return -1
+            }
+            return 0
+        }
     }
 
     suspend fun testConfCode(email: String, code: String, baseURL: String): Pair<Boolean, String?> {
