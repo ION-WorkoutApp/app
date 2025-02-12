@@ -185,18 +185,18 @@ class ExerciseScreen {
                 var error by remember { mutableStateOf("") }
 
                 CreateAlertDialog(
-                    "Enter saved workout name", context
-                ) {
-                    if (!it.isNullOrEmpty()) workoutName = it
-                    else error = "Failed to read workout name"
-                }
+                    "Enter saved workout name", context, CB = {
+                        if (!it.isNullOrEmpty()) workoutName = it
+                        else error = "Failed to read workout name"
+                    }
+                )
 
                 if (error.isNotEmpty()) {
                     CreateAlertDialog(
-                        error, context
-                    ) {
-                        error = ""
-                    }
+                        error, context, CB = {
+                            error = ""
+                        }
+                    )
                 } else if (!workoutName.isNullOrEmpty()) {
                     Log.d(TAG, "Saving workout with name: $workoutName")
 

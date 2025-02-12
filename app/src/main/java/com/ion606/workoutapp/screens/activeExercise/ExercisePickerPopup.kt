@@ -145,6 +145,7 @@ class ExercisePickerPopup {
                         if (response.exercises.isEmpty()) {
                             state.exercises.clear()
                             state.isLoading.value = false
+                            state.isSearching.value = false
                         } else {
                             state.exercises.addAll(
                                 response.exercises.sortBySimilarityOrDefault(

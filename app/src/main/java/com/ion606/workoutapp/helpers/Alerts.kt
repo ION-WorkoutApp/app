@@ -3,6 +3,7 @@ package com.ion606.workoutapp.helpers
 import android.app.AlertDialog
 import android.content.Context
 import android.text.InputType
+import android.util.Log
 import android.view.Gravity
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -161,6 +162,7 @@ class Alerts {
             title: String = "Title",
             context: Context,
             isTimeInput: Boolean = false,
+            currentValue: Any? = null,
             CB: (uText: String?) -> Unit
         ) {
             val builder: AlertDialog.Builder = AlertDialog.Builder(context)
@@ -174,10 +176,16 @@ class Alerts {
                     gravity = Gravity.CENTER
                 }
 
+                val (minute, second) = if (currentValue is Int) {
+                    intArrayOf(currentValue / 60, currentValue % 60)
+                }
+                else intArrayOf(0, 0)
+
                 // minute picker
                 val minutePicker = NumberPicker(context).apply {
                     minValue = 0
                     maxValue = 59
+                    value = minute
                 }
                 container.addView(minutePicker)
 
@@ -193,6 +201,7 @@ class Alerts {
                 val secondPicker = NumberPicker(context).apply {
                     minValue = 0
                     maxValue = 59
+                    value = second
                 }
                 container.addView(secondPicker)
 
@@ -200,9 +209,7 @@ class Alerts {
 
                 builder.setPositiveButton("OK") { _, _ ->
                     // get the selected minute and second
-                    val minute = minutePicker.value
-                    val second = secondPicker.value
-                    CB("${minute * 60 + second}")
+                    CB("${minutePicker.value * 60 + secondPicker.value}")
                 }
             } else {
                 // create an edit text for text input

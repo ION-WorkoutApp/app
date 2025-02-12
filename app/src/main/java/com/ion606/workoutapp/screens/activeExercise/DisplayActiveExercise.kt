@@ -15,6 +15,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -99,16 +102,6 @@ fun stringToInt(s: String): Int {
     }
 }
 
-/*
-  if you need to store distance in your sets, add a distance property to your data class:
-  data class ExerciseSetDataObj(
-      val value: Int,
-      val distance: Int? = null,
-      @PrimaryKey val id: String = UUID.randomUUID().toString(),
-      var isDone: Boolean = false,
-      var restTime: Int = 0
-  )
-*/
 
 class DisplayActiveExercise {
     companion object {
@@ -163,6 +156,7 @@ class DisplayActiveExercise {
 
             // show/hide expanded info
             val isInfoExpanded = remember { mutableStateOf(false) }
+            val focusManager = LocalFocusManager.current;
 
             // timers & rest
             val timerSetr = remember { mutableStateOf<ExerciseSetDataObj?>(null) }
@@ -210,8 +204,7 @@ class DisplayActiveExercise {
                             shouldLogSet = false
                         }
                     }
-                }
-                else {
+                } else {
                     restTimer.intValue = tempTime
                     shouldLogSet = false
                 }
@@ -309,7 +302,9 @@ class DisplayActiveExercise {
                     isProgress = true
                 )
 
-                if (pManager == null) Log.d(TAG, "PManager is null, timer bar will not be displayed");
+                if (pManager == null) Log.d(
+                    TAG, "PManager is null, timer bar will not be displayed"
+                );
 
                 // show rest timer if needed
                 StartTimer(headerText = "Rest Timer",
@@ -317,7 +312,9 @@ class DisplayActiveExercise {
                     onTickCB = { remainingTime ->
                         if (pManager == null) return@StartTimer
 
-                        pManager.setProgress(restTimer.intValue, restTimer.intValue - remainingTime, false)
+                        pManager.setProgress(
+                            restTimer.intValue, restTimer.intValue - remainingTime, false
+                        )
                         nhelper.updateNotification(pManager);
                     },
                     onFinishCB = { _ ->
@@ -329,29 +326,30 @@ class DisplayActiveExercise {
 
                         Log.d(TAG, "Rest timer completed")
 
-                            coroutineScope.launch {
-                                logSet(
-                                    superset,
-                                    restTimer,
-                                    exercise,
-                                    userManager,
-                                    dao,
-                                    triggerExerciseSave,
-                                    advanceToNextExercise
-                                )
-                                shouldLogSet = false
+                        coroutineScope.launch {
+                            logSet(
+                                superset,
+                                restTimer,
+                                exercise,
+                                userManager,
+                                dao,
+                                triggerExerciseSave,
+                                advanceToNextExercise
+                            )
+                            shouldLogSet = false
                         }
                     })
             }
 
             // endregion
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF121212)),
-                contentAlignment = Alignment.BottomCenter
-            ) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF121212))
+                .clickable(indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = { focusManager.clearFocus(); }),
+                contentAlignment = Alignment.BottomCenter) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Column(
@@ -553,18 +551,19 @@ class DisplayActiveExercise {
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                itemsIndexed(items = itemList, key = { _, item -> item.id }) { i, setItem ->
+                // to update the list every time anything changes, make the key EVERYTHING
+                itemsIndexed(items = itemList, key = { _, item ->
+                    "${item.id}-${item.value}-${item.distance}-${item.restTime}"
+                }) { i, setItem ->
                     var isVisible by remember { mutableStateOf(true) }
                     var editingTimer by remember { mutableStateOf(false) }
                     var restTimeStr by remember { mutableIntStateOf(setItem.restTime) }
                     var showToolTip by remember { mutableStateOf(false) }
 
                     if (showToolTip) {
-                        Tooltip(
-                            text = "Cannot edit rest time intermediate exercises!",
+                        Tooltip(text = "Cannot edit rest time intermediate exercises!",
                             modifier = Modifier.align(Alignment.CenterHorizontally),
-                            onDismiss = { showToolTip = false }
-                        )
+                            onDismiss = { showToolTip = false })
                     }
 
                     AnimatedVisibility(
@@ -573,7 +572,8 @@ class DisplayActiveExercise {
                         exit = slideOutHorizontally(animationSpec = tween(300))
                     ) {
                         // region
-                        if (!editingTimer || restTimer.intValue > 0) {
+
+                        if (!editingTimer) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -594,7 +594,7 @@ class DisplayActiveExercise {
                                         .padding(start = 5.dp, bottom = 0.dp)
                                         .height(35.dp)
                                         .align(Alignment.CenterVertically)
-                                        .clickable {
+                                        .clickable(enabled = (itemList.last() != setItem)) {
                                             if (!superset.isOnLastExercise()) showToolTip = true
                                             else if (restTimer.intValue <= 0) editingTimer = true
                                             else Log.d(
@@ -606,17 +606,30 @@ class DisplayActiveExercise {
                         } else {
                             // user wants to edit rest time
                             Alerts.CreateAlertDialog(
-                                title = "Edit Rest Time", context = context, isTimeInput = true
+                                title = "Edit Rest Time",
+                                context = context,
+                                isTimeInput = true,
+                                currentValue = itemList[i].restTime
                             ) { input ->
+                                val originalVal = itemList[i].restTime
                                 val restVal = input?.toIntOrNull()
-                                if (restVal == null || restVal <= 0) return@CreateAlertDialog
+                                if (restVal == null || restVal <= 0) {
+                                    editingTimer = false;
+                                    return@CreateAlertDialog
+                                }
                                 Log.d(TAG, "Rest time changed to $restVal")
 
                                 restTimeStr = restVal
-                                itemList[i] = setItem.copy(restTime = restVal)
+
+                                // loop through and update all exercises with the same rest timer
+                                for (idx in i until itemList.size) {
+                                    if (itemList[idx].restTime == originalVal) {
+                                        itemList[idx] = itemList[idx].copy(restTime = restVal)
+                                    }
+                                }
+
                                 exercise.inset = itemList
                                 exercise.restTime = restVal
-
                                 triggerExerciseSave(exercise, superset, false)
                                 editingTimer = false
                             }
@@ -730,7 +743,15 @@ class DisplayActiveExercise {
                                                 enabled = !setItem.isDone,
                                                 onChange = { newVal ->
                                                     val newDist = stringToInt(newVal)
-                                                    itemList[i] = setItem.copy(distance = newDist)
+
+                                                    // change later sets if they have the same distance
+                                                    for (idx in i until itemList.size) {
+                                                        if (itemList[idx].distance == setItem.distance) {
+                                                            itemList[idx] =
+                                                                itemList[idx].copy(distance = newDist)
+                                                        }
+                                                    }
+
                                                     exercise.inset = itemList
                                                     triggerExerciseSave(
                                                         exercise, superset, false
@@ -773,8 +794,15 @@ class DisplayActiveExercise {
                                                                     (stringToInt(mmStr) * 60) + stringToInt(
                                                                         t[1]
                                                                     )
-                                                                itemList[i] =
-                                                                    setItem.copy(value = newTime)
+
+                                                                // change later sets if they have the same time
+                                                                for (idx in i until itemList.size) {
+                                                                    if (itemList[idx].value == setItem.value) {
+                                                                        itemList[idx] =
+                                                                            itemList[idx].copy(value = newTime)
+                                                                    }
+                                                                }
+
                                                                 exercise.inset = itemList
                                                                 triggerExerciseSave(
                                                                     exercise, superset, false
@@ -839,8 +867,15 @@ class DisplayActiveExercise {
                                                                     stringToInt(ssStr) + (stringToInt(
                                                                         t[0]
                                                                     ) * 60)
-                                                                itemList[i] =
-                                                                    setItem.copy(value = newTime)
+
+                                                                // change later sets if they have the same time
+                                                                for (idx in i until itemList.size) {
+                                                                    if (itemList[idx].value == setItem.value) {
+                                                                        itemList[idx] =
+                                                                            itemList[idx].copy(value = newTime)
+                                                                    }
+                                                                }
+
                                                                 exercise.inset = itemList
                                                                 triggerExerciseSave(
                                                                     exercise, superset, false
@@ -861,8 +896,15 @@ class DisplayActiveExercise {
                                                                 .isEmpty()
                                                         ) return@InputField
                                                         val updatedReps = stringToInt(newVal)
-                                                        itemList[i] =
-                                                            setItem.copy(value = updatedReps)
+
+                                                        // change later sets if they have the same reps
+                                                        for (idx in i until itemList.size) {
+                                                            if (itemList[idx].value == setItem.value) {
+                                                                itemList[idx] =
+                                                                    itemList[idx].copy(value = updatedReps)
+                                                            }
+                                                        }
+
                                                         exercise.inset = itemList
                                                         triggerExerciseSave(
                                                             exercise, superset, false
@@ -876,23 +918,28 @@ class DisplayActiveExercise {
                                     Spacer(modifier = Modifier.width(16.dp))
 
                                     // region: weight input
-                                    InputField(value = exercise.weight?.getOrNull(
-                                        itemList.indexOf(setItem)
-                                    )?.value?.toString() ?: "",
-                                        label = "Weight (${userWeightUnit})",
+                                    InputField(value = exercise.weight?.getOrNull(i)?.value?.toString()
+                                        ?: "",
+                                        label = "weight (${userWeightUnit})",
                                         modifier = Modifier.weight(1f),
                                         enabled = !setItem.isDone,
                                         onChange = { newVal ->
-                                            if (newVal.trim().isEmpty()) return@InputField
-                                            val updatedWeight = stringToInt(newVal)
-                                            // update weight array at same index
-                                            exercise.weight =
-                                                exercise.weight?.toMutableList()?.apply {
-                                                    val idx = itemList.indexOf(setItem)
-                                                    this[idx] = ExerciseSetDataObj(updatedWeight)
+                                            if (newVal.trim().isEmpty()) return@InputField;
+                                            val oldWeight =
+                                                exercise.weight?.getOrNull(i)?.value ?: 0;
+                                            val updatedWeight = stringToInt(newVal);
+
+                                            // update all following sets with the same weight
+                                            for (idx in i until itemList.size) {
+                                                if (exercise.weight?.getOrNull(idx)?.value == oldWeight) {
+                                                    exercise.weight?.getOrNull(idx)?.value =
+                                                        updatedWeight;
                                                 }
-                                            triggerExerciseSave(exercise, superset, false)
-                                        })
+                                            }
+
+                                            triggerExerciseSave(exercise, superset, false);
+                                        });
+
                                     // endregion
                                 }
                             }
@@ -903,7 +950,7 @@ class DisplayActiveExercise {
             }
         }
 
-        private suspend fun logSet(
+        private fun logSet(
             currentSuperset: SuperSet,
             restTimer: MutableIntState,
             exercise: ActiveExercise,
@@ -924,7 +971,7 @@ class DisplayActiveExercise {
             )
         }
 
-        private suspend fun goToNextExercise(
+        private fun goToNextExercise(
             superset: SuperSet,
             restTimer: MutableIntState,
             exercise: ActiveExercise,
@@ -933,8 +980,6 @@ class DisplayActiveExercise {
             triggerExerciseSave: (ActiveExercise, SuperSet) -> Unit,
             advanceToNextExercise: (ActiveExercise?, SuperSet) -> Unit
         ) {
-            // stop timer for all supersets
-//            dao.getAll().forEach { it.exercises.forEach { e -> e.stopStopwatch() } }
             exercise.stopStopwatch()
             val idx = exercise.inset!!.indexOfFirst { !it.isDone }
             if (idx >= 0) {

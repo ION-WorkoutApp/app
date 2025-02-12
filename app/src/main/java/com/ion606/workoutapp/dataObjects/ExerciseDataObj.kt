@@ -24,6 +24,7 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import java.lang.reflect.Type
 import java.util.UUID
+import kotlin.math.floor
 
 
 enum class ExerciseMeasureType(val value: Int) {
@@ -61,7 +62,7 @@ data class Exercise(
 
 @Entity
 data class ExerciseSetDataObj(
-    val value: Int,
+    var value: Int,
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     var isDone: Boolean = false,
     var distance: Int? = null,
@@ -276,7 +277,7 @@ data class ActiveExercise(
             this.inset!!.sumOf { it.value }.toDouble() / 60
         }
 
-        this.caloriesBurned = (this.exercise.met * userWeight.toDouble() * 3.5 * multiplier) / 200
+        this.caloriesBurned = floor((this.exercise.met * userWeight.toDouble() * 3.5 * multiplier) / 200)
         this.isDone = true
     }
 

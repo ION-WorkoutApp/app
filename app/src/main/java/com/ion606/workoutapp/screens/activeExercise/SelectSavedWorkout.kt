@@ -165,14 +165,14 @@ fun SelectWorkoutPopup(
                                 if (triggerRename.value) {
                                     val newName = remember { mutableStateOf("") }
 
-                                    Alerts.CreateAlertDialog("Rename Workout", context) {
+                                    Alerts.CreateAlertDialog("Rename Workout", context, CB = {
                                         if (!it.isNullOrEmpty()) {
                                             newName.value = it
                                         } else {
                                             renameResult.value = Pair(false, "Name cannot be empty")
                                             triggerRename.value = false
                                         }
-                                    }
+                                    })
 
                                     if (newName.value.isNotEmpty()) {
                                         syncManager.sendDataCB(

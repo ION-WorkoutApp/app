@@ -158,6 +158,7 @@ class NotificationManager(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH) // Notification priority.
             .setLargeIcon(largeIconBitmap) // Large icon.
             .setAutoCancel(true) // Dismiss notification on tap.
+            .setOnlyAlertOnce(true)
             .setStyle(
                 NotificationCompat.BigPictureStyle().bigPicture(largeIconBitmap)
                     .bigLargeIcon(null as Bitmap?)

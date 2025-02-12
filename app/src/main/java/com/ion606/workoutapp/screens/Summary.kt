@@ -158,7 +158,7 @@ fun ExerciseSummaryItem(exercise: ActiveExercise) {
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Calories Burned: ${exercise.caloriesBurned} kcal",
+                text = "Calories Burned: ${exercise.caloriesBurned.toInt()} kcal",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
