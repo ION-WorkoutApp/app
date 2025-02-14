@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 
 // Reusable input field with dark styling
@@ -44,6 +46,15 @@ fun InputField(
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val inpVal = remember { mutableStateOf(value) }
+    val initialValue by remember { mutableStateOf(value) }
+    var debouncedValue by remember { mutableStateOf(value) }
+
+    // Debounce logic
+    LaunchedEffect(inpVal.value) {
+        delay(1000) // 1-second delay
+        debouncedValue = inpVal.value
+        onChange?.invoke(debouncedValue)
+    }
 
     Column(
         modifier = modifier
@@ -62,16 +73,15 @@ fun InputField(
         BasicTextField(
             value = inpVal.value,
             onValueChange = {
-                if (onChange != null) onChange(it)
-                if (enabled) inpVal.value = it
+                if (enabled) inpVal.value = it // Update the input value immediately
             },
             modifier = Modifier
                 .focusRequester(focusRequester)
-                .focusable(enabled) // Enable focus only if enabled
+                .focusable(enabled)
                 .onFocusChanged { focusState ->
                     if (enabled) {
                         isFocused = focusState.isFocused
-                        if (isFocused && inpVal.value == value) {
+                        if (isFocused && inpVal.value == initialValue) {
                             inpVal.value = ""
                         } else if (!isFocused && inpVal.value == "") {
                             inpVal.value = value
@@ -87,18 +97,18 @@ fun InputField(
                 .background(
                     color = if (enabled) {
                         if (isFocused) Color(0xFF444444) else Color(0xFF2A2A2A)
-                    } else Color(0xFF1A1A1A), // Dim background if disabled
+                    } else Color(0xFF1A1A1A),
                     shape = MaterialTheme.shapes.medium
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             maxLines = 1,
             textStyle = TextStyle(
-                color = if (enabled) Color.White else Color.Gray, // Dim text color if disabled
+                color = if (enabled) Color.White else Color.Gray,
                 fontSize = 20.sp,
                 textAlign = TextAlign.Center
             ),
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = kbt),
-            enabled = enabled // Disables input if not enabled
+            enabled = enabled
         )
     }
 }
@@ -116,6 +126,15 @@ fun InputFieldCompact(
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val inpVal = remember { mutableStateOf(value) }
+    val initialValue by remember { mutableStateOf(value) }
+    var debouncedValue by remember { mutableStateOf(value) }
+
+    // Debounce logic
+    LaunchedEffect(inpVal.value) {
+        delay(1000) // 1-second delay
+        debouncedValue = inpVal.value
+        onChange?.invoke(debouncedValue)
+    }
 
     Column(
         modifier = modifier,
@@ -134,18 +153,15 @@ fun InputFieldCompact(
         BasicTextField(
             value = inpVal.value,
             onValueChange = {
-                if (enabled) {
-                    inpVal.value = it
-                    onChange?.invoke(it)
-                }
-            }, // Allow text change only if enabled
+                if (enabled) inpVal.value = it // Update the input value immediately
+            },
             modifier = Modifier
                 .focusRequester(focusRequester)
-                .focusable(enabled) // Enable focus only if enabled
+                .focusable(enabled)
                 .onFocusChanged { focusState ->
                     if (enabled) {
                         isFocused = focusState.isFocused
-                        if (isFocused && inpVal.value == value) {
+                        if (isFocused && inpVal.value == initialValue) {
                             inpVal.value = ""
                         } else if (!isFocused && inpVal.value == "") {
                             inpVal.value = value
@@ -161,18 +177,18 @@ fun InputFieldCompact(
                 .background(
                     color = if (enabled) {
                         if (isFocused) Color(0xFF555555) else Color(0xFF333333)
-                    } else Color(0xFF1A1A1A), // Dim background if disabled
-                    shape = MaterialTheme.shapes.small // Smaller corner radius
+                    } else Color(0xFF1A1A1A),
+                    shape = MaterialTheme.shapes.small
                 )
-                .padding(horizontal = 8.dp, vertical = 8.dp), // Reduce padding
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             textStyle = TextStyle(
-                color = if (enabled) Color.White else Color.Gray, // Dim text color if disabled
+                color = if (enabled) Color.White else Color.Gray,
                 fontSize = 20.sp,
                 textAlign = TextAlign.Center
             ),
             maxLines = 1,
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = kbt),
-            enabled = enabled // Disables input if not enabled
+            enabled = enabled
         )
     }
 }

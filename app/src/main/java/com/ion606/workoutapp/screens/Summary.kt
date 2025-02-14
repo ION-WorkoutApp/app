@@ -154,7 +154,7 @@ fun ExerciseSummaryItem(exercise: ActiveExercise) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Sets: ${exercise.sets} (Done: ${exercise.setsDone})",
+                text = "Sets: ${exercise.sets} (Done: ${exercise.inset?.count { it.isDone } ?: 0})",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(

@@ -56,6 +56,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.lifecycle.process)
     val work_version = "2.10.0"
 
     implementation(libs.material3)

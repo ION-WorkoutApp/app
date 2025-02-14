@@ -287,7 +287,8 @@ fun ExerciseBox(
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = {
-                        isDragging = true
+                        // no dragging if done
+                        isDragging = !exercise.isDone
                         viewModel.startDragging(exercise, activeSuperset)
                     },
                     onDrag = { change, dragAmount ->

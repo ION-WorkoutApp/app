@@ -50,6 +50,7 @@ coreKtxVersion = "1.6.1"
 securityCryptoKtx = "1.0.0"
 roomKtxVersion = "2.7.0-alpha12"
 workTesting = "2.10.0"
+lifecycleProcess = "2.8.7"
 
 [libraries]
 androidx-core = { module = "androidx.test:core", version.ref = "core" }
@@ -115,6 +116,7 @@ androidx-security-crypto-ktx = { group = "androidx.security", name = "security-c
 tink-android = { module = "com.google.crypto.tink:tink-android" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtxVersion" }
 androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "workTesting" }
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

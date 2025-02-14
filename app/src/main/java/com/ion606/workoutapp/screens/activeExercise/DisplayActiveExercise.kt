@@ -2,6 +2,9 @@ package com.ion606.workoutapp.screens.activeExercise
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -15,7 +18,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +75,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.ion606.workoutapp.MainActivity
 import com.ion606.workoutapp.R
 import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
@@ -105,6 +108,19 @@ fun stringToInt(s: String): Int {
 
 class DisplayActiveExercise {
     companion object {
+        private fun getStoredTime(context: Context, key: String = "restTime"): Int {
+            val prefs: SharedPreferences = context.getSharedPreferences(key, MODE_PRIVATE)
+            return prefs.getInt("seconds", 0)
+        }
+
+        private fun setStoredTime(context: Context, rt: Int, key: String = "restTime") {
+            val prefs: SharedPreferences = context.getSharedPreferences(key, MODE_PRIVATE)
+            val editor = prefs.edit()
+            editor.putInt("seconds", rt)
+            editor.apply()
+        }
+
+
         @Composable
         private fun TimeHelper(
             nhelper: NotificationManager,
@@ -137,6 +153,7 @@ class DisplayActiveExercise {
                 })
         }
 
+
         @SuppressLint("MutableCollectionMutableState", "UnusedContentLambdaTargetStateParameter")
         @Composable
         fun DisplayActiveExerciseScreen(
@@ -162,7 +179,7 @@ class DisplayActiveExercise {
             val timerSetr = remember { mutableStateOf<ExerciseSetDataObj?>(null) }
             val secondaryTimerSetr = remember { mutableStateOf<ExerciseSetDataObj?>(null) }
             val showAlert = remember { mutableStateOf(false) }
-            val restTimer = remember { mutableIntStateOf(0) }
+            val restTimer = remember { mutableIntStateOf(this.getStoredTime(context)) }
             val isTimerVisible = remember { mutableStateOf(false) }
             val currentSetTime = remember { mutableIntStateOf(0) }
 
@@ -231,6 +248,7 @@ class DisplayActiveExercise {
                     currentSetTime.intValue = setItem.value
                     while (currentSetTime.intValue > 0) {
                         delay(1000)
+                        setStoredTime(context, currentSetTime.intValue, "repTimer")
                         currentSetTime.intValue -= 1
                     }
                     isTimerVisible.value = false
@@ -240,6 +258,7 @@ class DisplayActiveExercise {
                     } else {
                         // done with the timer
                         timerSetr.value = null
+                        setStoredTime(context, 0, "repTimer")
                     }
                 }
             }
@@ -250,8 +269,10 @@ class DisplayActiveExercise {
                     currentSetTime.intValue = setItem.value
                     while (currentSetTime.intValue > 0) {
                         delay(1000)
+                        setStoredTime(context, currentSetTime.intValue, "repTimer")
                         currentSetTime.intValue -= 1
                     }
+                    setStoredTime(context, 0, "repTimer")
                     isTimerVisible.value = false
                     secondaryTimerSetr.value = null
                 }
@@ -292,9 +313,10 @@ class DisplayActiveExercise {
                 Log.d(TAG, "Rest timer is active with time ${restTimer.intValue}")
 
                 // show notif now because it's a progressive
-                val pManager = nhelper.sendNotificationIfUnfocused(
+                // not ifunfocused because the user might click away during rest and still want the progress bar
+                val pManager = nhelper.sendNotification(
                     title = "Rest Timer",
-                    message = "Rest timer completed for ${exercise.exercise.title}",
+                    message = "Starting rest timer for ${exercise.exercise.title}",
                     intents = listOf(
                         "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
                         "exerciseId" to exercise.exercise.exerciseId
@@ -310,6 +332,7 @@ class DisplayActiveExercise {
                 StartTimer(headerText = "Rest Timer",
                     remainingTime = restTimer.intValue,
                     onTickCB = { remainingTime ->
+                        setStoredTime(context, remainingTime)
                         if (pManager == null) return@StartTimer
 
                         pManager.setProgress(
@@ -319,12 +342,25 @@ class DisplayActiveExercise {
                     },
                     onFinishCB = { _ ->
                         // doesn't matter if it was cancelled or not bc the time needs to be logged either way
+                        setStoredTime(context, 0)
 
                         // remove progress bar
                         pManager?.setProgress(0, 0, false)
                         restTimer.intValue = 0
 
-                        Log.d(TAG, "Rest timer completed")
+                        Log.d(TAG, "Rest timer completed");
+
+                        // cancel progress notification
+                        nhelper.cancelNotification()
+
+                        nhelper.sendNotificationIfUnfocused(
+                            title = "Rest Timer",
+                            message = "Rest timer completed for ${exercise.exercise.title}",
+                            intents = listOf(
+                                "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                                "exerciseId" to exercise.exercise.exerciseId
+                            )
+                        )
 
                         coroutineScope.launch {
                             logSet(
@@ -343,13 +379,15 @@ class DisplayActiveExercise {
 
             // endregion
 
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF121212))
-                .clickable(indication = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick = { focusManager.clearFocus(); }),
-                contentAlignment = Alignment.BottomCenter) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF121212))
+                    .clickable(indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        onClick = { focusManager.clearFocus(); }),
+                contentAlignment = Alignment.BottomCenter
+            ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Column(
@@ -531,6 +569,7 @@ class DisplayActiveExercise {
             }
         }
 
+
         @Composable
         private fun ColumnScope.CreateSetsList(
             listState: LazyListState,
@@ -594,7 +633,7 @@ class DisplayActiveExercise {
                                         .padding(start = 5.dp, bottom = 0.dp)
                                         .height(35.dp)
                                         .align(Alignment.CenterVertically)
-                                        .clickable(enabled = (itemList.last() != setItem)) {
+                                        .clickable(enabled = (itemList.last() != setItem && !setItem.isDone)) {
                                             if (!superset.isOnLastExercise()) showToolTip = true
                                             else if (restTimer.intValue <= 0) editingTimer = true
                                             else Log.d(
@@ -950,6 +989,7 @@ class DisplayActiveExercise {
             }
         }
 
+
         private fun logSet(
             currentSuperset: SuperSet,
             restTimer: MutableIntState,
@@ -984,7 +1024,6 @@ class DisplayActiveExercise {
             val idx = exercise.inset!!.indexOfFirst { !it.isDone }
             if (idx >= 0) {
                 exercise.inset!![idx] = exercise.inset!![idx].apply {
-                    this.restTime = restTimer.intValue
                     this.isDone = true
 
                     if (ExerciseMeasureType.useTime(exercise.exercise.measureType)) {

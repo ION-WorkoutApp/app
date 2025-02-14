@@ -20,14 +20,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
 import com.ion606.workoutapp.dataObjects.WorkoutDatabase
 import com.ion606.workoutapp.helpers.Alerts
+import com.ion606.workoutapp.helpers.AppLifecycleObserver
 import com.ion606.workoutapp.helpers.CheckIfInDebugMode
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.TopScreenMessageText
+import com.ion606.workoutapp.helpers.cancelWorkoutReminder
 import com.ion606.workoutapp.helpers.scheduleWorkoutReminder
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.SyncManager
@@ -59,7 +62,10 @@ class MainActivity : ComponentActivity() {
         val nhelper = NotificationManager(this@MainActivity);
         val permissions = PermissionsManager();
 
-        scheduleWorkoutReminder(this@MainActivity)
+        AppLifecycleObserver // Initialize the observer, yes it's supposed to just be there
+
+        // cancel the reminder while the app is open
+        cancelWorkoutReminder(this@MainActivity)
 
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

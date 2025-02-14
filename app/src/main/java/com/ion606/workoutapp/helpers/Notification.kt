@@ -41,6 +41,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.ion606.workoutapp.MainActivity
 import com.ion606.workoutapp.R
 import kotlin.math.roundToInt
 
@@ -52,7 +53,13 @@ class MyBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.action == "OPEN_APP") {
             Log.d(TAG, "Custom action received: OPEN_APP");
-            // um.....open...open the app
+            context?.let {
+                // create an intent to launch the main activity
+                val launchIntent = Intent(it, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK;
+                }
+                it.startActivity(launchIntent);
+            }
         }
     }
 }
@@ -115,7 +122,7 @@ class NotificationManager(private val context: Context) {
         }
     }
 
-    private fun sendNotification(
+    fun sendNotification(
         title: String,
         message: String,
         actionName: String = "OPEN_APP",
@@ -142,6 +149,12 @@ class NotificationManager(private val context: Context) {
             intents.forEach { (key, value) -> putExtra(key, value) }
         }
 
+        // open app on click
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         // PendingIntent for the custom action.
         val actionPendingIntent = PendingIntent.getBroadcast(
             context,
@@ -159,6 +172,7 @@ class NotificationManager(private val context: Context) {
             .setLargeIcon(largeIconBitmap) // Large icon.
             .setAutoCancel(true) // Dismiss notification on tap.
             .setOnlyAlertOnce(true)
+            .setContentIntent(contentIntent)
             .setStyle(
                 NotificationCompat.BigPictureStyle().bigPicture(largeIconBitmap)
                     .bigLargeIcon(null as Bitmap?)
@@ -171,15 +185,6 @@ class NotificationManager(private val context: Context) {
 
         // Add each action dynamically.
         actions.forEach { action -> builder.addAction(action) }
-
-        // Add the default action if no custom actions are provided.
-        if (actions.isEmpty()) {
-            builder.addAction(
-                R.drawable.ic_log, // Replace with your default action icon.
-                "Open App", // Action text.
-                actionPendingIntent
-            )
-        }
 
         // Send the notification.
         val notificationManager = NotificationManagerCompat.from(context)
@@ -197,7 +202,7 @@ class NotificationManager(private val context: Context) {
         intents: List<Pair<String, String>> = emptyList(),
         isProgress: Boolean = false
     ): NotificationCompat.Builder? {
-        // TODO: Implement this method to send a notification only if the app is not in the foreground
+        if (AppLifecycleObserver.isAppInForeground) return null;
         return sendNotification(title, message, actionName, iconResId, actions, intents, isProgress)
     }
 
@@ -212,6 +217,10 @@ class NotificationManager(private val context: Context) {
         }
 
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build());
+    }
+
+    fun cancelNotification() {
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID);
     }
 }
 
