@@ -32,7 +32,7 @@ private const val TAG = "LoginScreen"
 fun LoginScreen(navController: NavController, dataManager: DataManager, userManager: UserManager) {
     val username = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
-    val serverUrl = remember { mutableStateOf("https://test.ion606.com") }
+    val serverUrl = remember { mutableStateOf("https://workoutep.ion606.com") }
     val loginMessage = remember { mutableStateOf("") }
     val isDisabled = remember { mutableStateOf(dataManager.isLoggedIn()) }
     val titleText = remember { mutableStateOf("Log In") }

@@ -89,8 +89,7 @@ fun GradientConnector() {
         modifier = Modifier
             .fillMaxWidth()
             .height(24.dp) // Adjust height as needed
-            .padding(vertical = 4.dp),
-        contentAlignment = Alignment.Center
+            .padding(vertical = 4.dp), contentAlignment = Alignment.Center
     ) {
         // Enhanced Gradient line with rounded edges
         Box(
@@ -102,8 +101,7 @@ fun GradientConnector() {
                         colors = listOf(Color(0xFFB0BEC5), Color(0xFF78909C)),
                         startY = 0f,
                         endY = Float.POSITIVE_INFINITY
-                    ),
-                    shape = RoundedCornerShape(2.dp) // Rounded corners
+                    ), shape = RoundedCornerShape(2.dp) // Rounded corners
                 )
         )
     }
@@ -127,19 +125,16 @@ fun SuperSetBox(
     val backgroundColor = if (isSingleExercise) Color(0xFF2E2E2E) else Color(0xFF1E1E1E)
     val cornerRadius = if (isSingleExercise) 16.dp else 12.dp
 
-    Box(
-        modifier = Modifier
-            .padding(10.dp)
-            .fillMaxWidth()
-            .background(
-                color = backgroundColor,
-                shape = RoundedCornerShape(cornerRadius)
-            )
-            .onGloballyPositioned { coordinates ->
-                // Store this Superset’s bounding box for collision detection
-                superSetBounds[superSet.id] = coordinates.boundsInWindow()
-            }
-    ) {
+    Box(modifier = Modifier
+        .padding(10.dp)
+        .fillMaxWidth()
+        .background(
+            color = backgroundColor, shape = RoundedCornerShape(cornerRadius)
+        )
+        .onGloballyPositioned { coordinates ->
+            // Store this Superset’s bounding box for collision detection
+            superSetBounds[superSet.id] = coordinates.boundsInWindow()
+        }) {
         if (isSingleExercise) {
             // Render the single exercise directly without the superset header
             ExerciseBox(
@@ -158,8 +153,7 @@ fun SuperSetBox(
             // Render the superset header and list of exercises with connectors
             Column(modifier = Modifier.padding(10.dp)) {
                 // Superset header with conditional text and animated indicator
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Row(verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
@@ -167,11 +161,9 @@ fun SuperSetBox(
                         }
                         .animateContentSize(
                             animationSpec = tween(
-                                durationMillis = 300,
-                                easing = FastOutSlowInEasing
+                                durationMillis = 300, easing = FastOutSlowInEasing
                             )
-                        )
-                ) {
+                        )) {
                     Text(
                         text = "Superset (${superSet.exercises.size} Exercises)${if (superSet.isDone) " (Done)" else ""}",
                         style = MaterialTheme.typography.titleMedium,
@@ -190,23 +182,17 @@ fun SuperSetBox(
 
                 // Animated visibility for expanding/collapsing exercises
                 AnimatedVisibility(
-                    visible = isExpanded.value,
-                    enter = expandVertically(
+                    visible = isExpanded.value, enter = expandVertically(
                         animationSpec = tween(
-                            durationMillis = 300,
-                            easing = FastOutSlowInEasing
+                            durationMillis = 300, easing = FastOutSlowInEasing
                         )
                     ) + fadeIn(
-                        initialAlpha = 0.3f,
-                        animationSpec = tween(
-                            durationMillis = 300,
-                            delayMillis = 100
+                        initialAlpha = 0.3f, animationSpec = tween(
+                            durationMillis = 300, delayMillis = 100
                         )
-                    ),
-                    exit = shrinkVertically(
+                    ), exit = shrinkVertically(
                         animationSpec = tween(
-                            durationMillis = 300,
-                            easing = FastOutSlowInEasing
+                            durationMillis = 300, easing = FastOutSlowInEasing
                         )
                     ) + fadeOut(
                         animationSpec = tween(
@@ -274,186 +260,185 @@ fun ExerciseBox(
         else -> Color(0xFF1E1E1E)
     }
 
-    Box(
-        modifier = Modifier
-            .padding(5.dp)
-            .fillMaxWidth()
-            // Apply zIndex to the outermost Box
-            .zIndex(zInd)
-            .onGloballyPositioned { coords ->
-                exerciseBoxBounds = coords.boundsInWindow()
-                viewModel.exerciseBounds[exercise.id] = exerciseBoxBounds!!
-            }
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = {
-                        // no dragging if done
-                        isDragging = !exercise.isDone
-                        viewModel.startDragging(exercise, activeSuperset)
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consumeAllChanges()
-                        coroutineScope.launch {
-                            // Determine drag direction if not set
-                            if (dragDirection == null) {
-                                dragDirection = when {
-                                    abs(dragAmount.x) > abs(dragAmount.y) -> DragDirection.HORIZONTAL
-                                    else -> DragDirection.VERTICAL
-                                }
-                            }
+    Box(modifier = Modifier
+        .padding(5.dp)
+        .fillMaxWidth()
+        // Apply zIndex to the outermost Box
+        .zIndex(zInd)
+        .onGloballyPositioned { coords ->
+            exerciseBoxBounds = coords.boundsInWindow()
+            viewModel.exerciseBounds[exercise.id] = exerciseBoxBounds!!
+        }
+        .pointerInput(Unit) {
+            detectDragGestures(onDragStart = {
+                // no dragging if done
+                if (exercise.isDone) return@detectDragGestures
+                isDragging = true
+                viewModel.startDragging(exercise, activeSuperset)
+            }, onDrag = { change, dragAmount ->
+                change.consumeAllChanges()
+                coroutineScope.launch {
+                    if (!isDragging) return@launch
 
-                            // Move only along the chosen axis
-                            when (dragDirection) {
-                                DragDirection.HORIZONTAL -> xOffsetAnim.snapTo(xOffsetAnim.value + dragAmount.x)
-                                DragDirection.VERTICAL -> yOffsetAnim.snapTo(yOffsetAnim.value + dragAmount.y)
-                                null -> {}
-                            }
-
-                            // If dragging horizontally, skip overlap detection
-                            if (dragDirection == DragDirection.HORIZONTAL) return@launch
-
-                            // Detect overlap for setting swap target
-                            val currentBounds = Rect(
-                                left = (exerciseBoxBounds?.left ?: 0f) + xOffsetAnim.value,
-                                top = (exerciseBoxBounds?.top ?: 0f) + yOffsetAnim.value,
-                                right = (exerciseBoxBounds?.right ?: 0f) + xOffsetAnim.value,
-                                bottom = (exerciseBoxBounds?.bottom ?: 0f) + yOffsetAnim.value
-                            )
-                            var newTargetId: String? = null
-                            for (superset in viewModel.supersets) {
-                                for (otherExercise in superset.exercises) {
-                                    if (otherExercise.id == exercise.id) continue
-                                    val otherBounds = viewModel.exerciseBounds[otherExercise.id]
-                                    if (
-                                        otherBounds != null &&
-                                        doRectanglesOverlap(currentBounds, otherBounds, margin = 20f)
-                                    ) {
-                                        newTargetId = otherExercise.id
-                                        break
-                                    }
-                                }
-                                if (newTargetId != null) break
-                            }
-                            viewModel.setCurrentSwapTargetId(newTargetId)
-                        }
-                    },
-                    onDragEnd = {
-                        coroutineScope.launch {
-                            if (dragDirection == DragDirection.HORIZONTAL) {
-                                // Remove if swiped far horizontally
-                                if (xOffsetAnim.value > CENTER_RAD) {
-                                    viewModel.removeExerciseFromSuperset(activeSuperset, exercise)
-                                }
-                                // Snap back
-                                xOffsetAnim.animateTo(0f, animationSpec = spring())
-                                yOffsetAnim.animateTo(0f, animationSpec = spring())
-                                isDragging = false
-                                dragDirection = null
-                                return@launch
-                            }
-
-                            // Vertical drag ended
-                            isDragging = false
-                            dragDirection = null
-
-                            val initialBounds = exerciseBoxBounds
-                            if (initialBounds != null) {
-                                val finalExerciseRect = Rect(
-                                    left = initialBounds.left + xOffsetAnim.value,
-                                    top = initialBounds.top + yOffsetAnim.value,
-                                    right = initialBounds.right + xOffsetAnim.value,
-                                    bottom = initialBounds.bottom + yOffsetAnim.value
-                                )
-                                var exerciseMoved = false
-
-                                // 1. Check if dropped into another superset
-                                for ((sid, supBounds) in superSetBoundsList) {
-                                    val targetSuperset = viewModel.supersets.find { it.id == sid }
-                                    if (targetSuperset == null || supBounds == null) continue
-
-                                    if (
-                                        targetSuperset.id != activeSuperset.id &&
-                                        doRectanglesOverlap(supBounds, finalExerciseRect, margin = 20f)
-                                    ) {
-                                        viewModel.moveExercise(targetSuperset)
-                                        exerciseMoved = true
-                                        break
-                                    }
-                                }
-
-                                // 2. Reorder if dropped within the same superset
-                                if (!exerciseMoved) {
-                                    val originalSupersetBounds = superSetBoundsList[activeSuperset.id]
-                                    if (
-                                        originalSupersetBounds != null &&
-                                        doRectanglesOverlap(originalSupersetBounds, finalExerciseRect, margin = 20f)
-                                    ) {
-                                        val fromIndex = activeSuperset.exercises.indexOf(exercise)
-                                        if (fromIndex != -1) {
-                                            val finalCenterX = finalExerciseRect.left + (finalExerciseRect.width / 2f)
-                                            val finalCenterY = finalExerciseRect.top + (finalExerciseRect.height / 2f)
-
-                                            val closestIndex = activeSuperset.exercises.withIndex()
-                                                .filter { it.value.id != exercise.id }
-                                                .minByOrNull { indexed ->
-                                                    val targetBounds = viewModel.exerciseBounds[indexed.value.id]
-                                                    if (targetBounds == null) {
-                                                        Float.MAX_VALUE
-                                                    } else {
-                                                        val centerX = (targetBounds.left + targetBounds.right) / 2f
-                                                        val centerY = (targetBounds.top + targetBounds.bottom) / 2f
-                                                        val dx = centerX - finalCenterX
-                                                        val dy = centerY - finalCenterY
-                                                        dx * dx + dy * dy // Distance squared
-                                                    }
-                                                }?.index
-
-                                            if (
-                                                closestIndex != null &&
-                                                closestIndex != fromIndex &&
-                                                closestIndex in activeSuperset.exercises.indices
-                                            ) {
-                                                viewModel.reorderExercise(
-                                                    superSet = activeSuperset,
-                                                    fromIndex = fromIndex,
-                                                    toIndex = closestIndex
-                                                )
-                                                exerciseMoved = true
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // 3. If not moved or reordered, create a new superset
-                                if (!exerciseMoved) {
-                                    viewModel.createNewSuperset(exercise)
-                                    viewModel.removeExerciseFromSuperset(activeSuperset, exercise)
-                                    exerciseMoved = true
-                                }
-
-                                // Stop dragging in ViewModel and reset swap target
-                                viewModel.stopDragging()
-                                viewModel.setCurrentSwapTargetId(null)
-
-                                // Animate back to original position
-                                xOffsetAnim.animateTo(0f, animationSpec = spring())
-                                yOffsetAnim.animateTo(0f, animationSpec = spring())
-                            }
-                        }
-                    },
-                    onDragCancel = {
-                        coroutineScope.launch {
-                            isDragging = false
-                            dragDirection = null
-                            viewModel.stopDragging()
-                            viewModel.setCurrentSwapTargetId(null)
-                            xOffsetAnim.animateTo(0f, animationSpec = spring())
-                            yOffsetAnim.animateTo(0f, animationSpec = spring())
+                    // Determine drag direction if not set
+                    if (dragDirection == null) {
+                        dragDirection = when {
+                            abs(dragAmount.x) > abs(dragAmount.y) -> DragDirection.HORIZONTAL
+                            else -> DragDirection.VERTICAL
                         }
                     }
-                )
-            }
-    ) {
+
+                    // Move only along the chosen axis
+                    when (dragDirection) {
+                        DragDirection.HORIZONTAL -> xOffsetAnim.snapTo(xOffsetAnim.value + dragAmount.x)
+                        DragDirection.VERTICAL -> yOffsetAnim.snapTo(yOffsetAnim.value + dragAmount.y)
+                        null -> {}
+                    }
+
+                    // If dragging horizontally, skip overlap detection
+                    if (dragDirection == DragDirection.HORIZONTAL) return@launch
+
+                    // Detect overlap for setting swap target
+                    val currentBounds = Rect(
+                        left = (exerciseBoxBounds?.left ?: 0f) + xOffsetAnim.value,
+                        top = (exerciseBoxBounds?.top ?: 0f) + yOffsetAnim.value,
+                        right = (exerciseBoxBounds?.right ?: 0f) + xOffsetAnim.value,
+                        bottom = (exerciseBoxBounds?.bottom ?: 0f) + yOffsetAnim.value
+                    )
+                    var newTargetId: String? = null
+                    for (superset in viewModel.supersets) {
+                        for (otherExercise in superset.exercises) {
+                            if (otherExercise.id == exercise.id) continue
+                            val otherBounds = viewModel.exerciseBounds[otherExercise.id]
+                            if (otherBounds != null && !otherExercise.isDone && doRectanglesOverlap(
+                                    currentBounds, otherBounds, margin = 20f
+                                )
+                            ) {
+                                newTargetId = otherExercise.id
+                                break
+                            }
+                        }
+                        if (newTargetId != null) break
+                    }
+                    viewModel.setCurrentSwapTargetId(newTargetId)
+                }
+            }, onDragEnd = {
+                coroutineScope.launch {
+                    if (!isDragging) return@launch
+
+                    if (dragDirection == DragDirection.HORIZONTAL) {
+                        // Remove if swiped far horizontally
+                        if (xOffsetAnim.value > CENTER_RAD) {
+                            viewModel.removeExerciseFromSuperset(activeSuperset, exercise)
+                        }
+                        // Snap back
+                        xOffsetAnim.animateTo(0f, animationSpec = spring())
+                        yOffsetAnim.animateTo(0f, animationSpec = spring())
+                        isDragging = false
+                        dragDirection = null
+                        return@launch
+                    }
+
+                    // Vertical drag ended
+                    isDragging = false
+                    dragDirection = null
+
+                    val initialBounds = exerciseBoxBounds
+                    if (initialBounds != null) {
+                        val finalExerciseRect = Rect(
+                            left = initialBounds.left + xOffsetAnim.value,
+                            top = initialBounds.top + yOffsetAnim.value,
+                            right = initialBounds.right + xOffsetAnim.value,
+                            bottom = initialBounds.bottom + yOffsetAnim.value
+                        )
+                        var exerciseMoved = false
+
+                        // 1. Check if dropped into another superset
+                        for ((sid, supBounds) in superSetBoundsList) {
+                            val targetSuperset = viewModel.supersets.find { it.id == sid }
+                            if (targetSuperset == null || supBounds == null) continue
+
+                            if (targetSuperset.id != activeSuperset.id && !targetSuperset.isDone && doRectanglesOverlap(
+                                    supBounds, finalExerciseRect, margin = 20f
+                                )
+                            ) {
+                                viewModel.moveExercise(targetSuperset)
+                                exerciseMoved = true
+                                break
+                            }
+                        }
+
+                        // 2. Reorder if dropped within the same superset
+                        if (!exerciseMoved) {
+                            val originalSupersetBounds = superSetBoundsList[activeSuperset.id]
+                            if (originalSupersetBounds != null && doRectanglesOverlap(
+                                    originalSupersetBounds, finalExerciseRect, margin = 20f
+                                )
+                            ) {
+                                val fromIndex = activeSuperset.exercises.indexOf(exercise)
+                                if (fromIndex != -1) {
+                                    val finalCenterX =
+                                        finalExerciseRect.left + (finalExerciseRect.width / 2f)
+                                    val finalCenterY =
+                                        finalExerciseRect.top + (finalExerciseRect.height / 2f)
+
+                                    val closestIndex = activeSuperset.exercises.withIndex()
+                                        .filter { it.value.id != exercise.id }
+                                        .minByOrNull { indexed ->
+                                            val targetBounds =
+                                                viewModel.exerciseBounds[indexed.value.id]
+                                            if (targetBounds == null) {
+                                                Float.MAX_VALUE
+                                            } else {
+                                                val centerX =
+                                                    (targetBounds.left + targetBounds.right) / 2f
+                                                val centerY =
+                                                    (targetBounds.top + targetBounds.bottom) / 2f
+                                                val dx = centerX - finalCenterX
+                                                val dy = centerY - finalCenterY
+                                                dx * dx + dy * dy // Distance squared
+                                            }
+                                        }?.index
+
+                                    if (closestIndex != null && closestIndex != fromIndex && closestIndex in activeSuperset.exercises.indices) {
+                                        viewModel.reorderExercise(
+                                            superSet = activeSuperset,
+                                            fromIndex = fromIndex,
+                                            toIndex = closestIndex
+                                        )
+                                        exerciseMoved = true
+                                    }
+                                }
+                            }
+                        }
+
+                        // 3. If not moved or reordered, create a new superset
+                        if (!exerciseMoved) {
+                            viewModel.createNewSuperset(exercise)
+                            viewModel.removeExerciseFromSuperset(activeSuperset, exercise)
+                            exerciseMoved = true
+                        }
+
+                        // Stop dragging in ViewModel and reset swap target
+                        viewModel.stopDragging()
+                        viewModel.setCurrentSwapTargetId(null)
+
+                        // Animate back to original position
+                        xOffsetAnim.animateTo(0f, animationSpec = spring())
+                        yOffsetAnim.animateTo(0f, animationSpec = spring())
+                    }
+                }
+            }, onDragCancel = {
+                coroutineScope.launch {
+                    isDragging = false
+                    dragDirection = null
+                    viewModel.stopDragging()
+                    viewModel.setCurrentSwapTargetId(null)
+                    xOffsetAnim.animateTo(0f, animationSpec = spring())
+                    yOffsetAnim.animateTo(0f, animationSpec = spring())
+                }
+            })
+        }) {
         // Fixed Red Background Layer
         if (isDragging && dragDirection == DragDirection.HORIZONTAL) {
             Box(
@@ -464,30 +449,25 @@ fun ExerciseBox(
         }
 
         // Draggable Card Layer
-        Box(
-            modifier = Modifier
-                .offset {
-                    IntOffset(
-                        xOffsetAnim.value.roundToInt(),
-                        yOffsetAnim.value.roundToInt()
-                    )
-                }
-                .background(
-                    color = if (isSwapTarget) Color(0xFFFFA500) else backgroundColor,
-                    shape = RoundedCornerShape(12.dp)
+        Box(modifier = Modifier
+            .offset {
+                IntOffset(
+                    xOffsetAnim.value.roundToInt(), yOffsetAnim.value.roundToInt()
                 )
-                .clip(RoundedCornerShape(12.dp))
-                .animateContentSize()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            }
+            .background(
+                color = if (isSwapTarget) Color(0xFFFFA500) else backgroundColor,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clip(RoundedCornerShape(12.dp))
+            .animateContentSize()) {
+            Row(verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFF1E1E1E)) // Inner background color
                     .clickable {
                         onExerciseClick(exercise)
-                    }
-            ) {
+                    }) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_launcher_background),
                     contentDescription = "Exercise Image",
@@ -507,11 +487,15 @@ fun ExerciseBox(
                         color = if (exercise.isDone) Color.LightGray else Color.White
                     )
 
-                    val measureStr = if (ExerciseMeasureType.useTime(exercise.exercise.measureType)) "time" else "reps"
-                    var secondLinePart = "${(exercise.inset?.map { it.value })?.average() ?: "???"} average $measureStr"
+                    val measureStr =
+                        if (ExerciseMeasureType.useTime(exercise.exercise.measureType)) "time" else "reps"
+                    var secondLinePart =
+                        "${(exercise.inset?.map { it.value })?.average() ?: "???"} average $measureStr"
 
                     if (exercise.inset != null && exercise.exercise.measureType == ExerciseMeasureType.DISTANCE_BASED) {
-                        secondLinePart += " with ${exercise.inset!!.mapNotNull { it.distance }.average()} average distance"
+                        secondLinePart += " with ${
+                            exercise.inset!!.mapNotNull { it.distance }.average()
+                        } average distance"
                     }
 
                     Text(

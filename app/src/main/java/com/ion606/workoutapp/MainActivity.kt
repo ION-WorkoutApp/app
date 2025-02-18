@@ -86,7 +86,6 @@ class MainActivity : ComponentActivity() {
                 }
 
                 if (runDebugChecks.value) CheckIfInDebugMode(dataManager) {
-                    Log.d("DEBUG", "$it")
                     if (it == -1) errmsg.value = "Failed to ping server"
                     else serverInDebugMode.value = (it == 1)
                 }

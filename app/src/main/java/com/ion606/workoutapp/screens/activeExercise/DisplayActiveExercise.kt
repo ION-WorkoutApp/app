@@ -702,13 +702,15 @@ class DisplayActiveExercise {
                                         Log.d(TAG, "Item not found in list")
                                         return@LaunchedEffect
                                     }
+
                                     itemList.remove(setItem)
                                     exercise.weight?.removeAt(ind)
 
-                                    saveChanges()
-
                                     exercise.inset = itemList
+                                    exercise.isDone = !itemList.any { !it.isDone }
                                     Log.d(TAG, "removed set $setItem from $exercise")
+
+                                    saveChanges()
                                     triggerExerciseSave(exercise, superset, false)
                                 }
                             }

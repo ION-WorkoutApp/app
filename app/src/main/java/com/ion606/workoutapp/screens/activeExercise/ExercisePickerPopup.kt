@@ -2,6 +2,7 @@ package com.ion606.workoutapp.screens.activeExercise
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,21 +84,24 @@ fun exercisesToActiveExercises(
         Log.d("ADDING ACTIVE EXERCISE", checkedExercise.toString());
 
         SuperSet(exercises = SnapshotStateList<ActiveExercise>().apply {
-            add(UnitConverters.convert(ActiveExercise(exercise = checkedExercise,
-                sets = setsCount,
-                setsDone = 0,
-                inset = inset.map { subset ->
-                    if (checkedExercise.measureType == ExerciseMeasureType.DISTANCE_BASED) {
-                        subset.copy(id = UUID.randomUUID().toString(), distance = 0)
-                    } else subset.copy(id = UUID.randomUUID().toString())
-                }.toMutableList(),
-                weight = weightsList.map { newSuperset ->
-                    newSuperset.copy(
-                        id = UUID.randomUUID().toString()
-                    )
-                }.toMutableList()
-            ), userManager
-            )
+            add(
+                UnitConverters.convert(
+                    ActiveExercise(
+                        exercise = checkedExercise,
+                        sets = setsCount,
+                        setsDone = 0,
+                        inset = inset.map { subset ->
+                            if (checkedExercise.measureType == ExerciseMeasureType.DISTANCE_BASED) {
+                                subset.copy(id = UUID.randomUUID().toString(), distance = 0)
+                            } else subset.copy(id = UUID.randomUUID().toString())
+                        }.toMutableList(),
+                        weight = weightsList.map { newSuperset ->
+                            newSuperset.copy(
+                                id = UUID.randomUUID().toString()
+                            )
+                        }.toMutableList()
+                    ), userManager
+                )
             )
         })
     }
@@ -125,6 +129,11 @@ class ExercisePickerPopup {
                     state.categories.clear()
                     state.categories.addAll(categoryData?.categories?.sorted() ?: emptyList())
                 }
+            }
+
+            BackHandler {
+                if (currentCat.value.isNotEmpty()) currentCat.value = ""
+                else showSelector.value = false
             }
 
             if ((currentCat.value.isNotEmpty() || state.triggerSearch.value) && !state.isLoading.value && state.shouldLoadMore.value) {
@@ -211,8 +220,7 @@ class ExercisePickerPopup {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Search Bar for Exercises
-                    TextField(
-                        value = state.searchQuery.value,
+                    TextField(value = state.searchQuery.value,
                         maxLines = 1,
                         onValueChange = {
                             state.searchQuery.value = it

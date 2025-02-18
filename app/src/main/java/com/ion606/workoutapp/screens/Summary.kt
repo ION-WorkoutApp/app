@@ -101,8 +101,8 @@ fun WorkoutSummaryBottomSheet(
 
 @Composable
 fun WorkoutSummaryStats(activeExercises: List<ActiveExercise>) {
-    val totalCalories = activeExercises.sumOf { it.caloriesBurned.toDouble() }
-    val totalRestTime = activeExercises.sumOf { it.restTime }
+    val totalCalories = activeExercises.sumOf { it.caloriesBurned }
+    val totalRestTime = activeExercises.sumOf { it.restTime } / 60
     val totalSets = activeExercises.sumOf { it.sets }
 
     Card(
@@ -124,7 +124,7 @@ fun WorkoutSummaryStats(activeExercises: List<ActiveExercise>) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
-                text = "Total Rest Time: $totalRestTime sec",
+                text = "Total Rest Time: $totalRestTime minutes",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -162,7 +162,7 @@ fun ExerciseSummaryItem(exercise: ActiveExercise) {
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Rest Time: ${exercise.restTime} sec",
+                text = "Total Rest Time: ${exercise.inset?.sumOf { it.restTime } } sec",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
