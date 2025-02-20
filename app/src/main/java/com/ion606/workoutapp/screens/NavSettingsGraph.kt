@@ -59,7 +59,7 @@ fun SettingsNavGraph(
         }
 
         composable(Screen.GeneralPreferences.route) {
-            GeneralPreferencesScreen(navController, userManager)
+            GeneralPreferencesScreen(navController, userManager, context)
         }
 
         composable(Screen.Notifications.route) {

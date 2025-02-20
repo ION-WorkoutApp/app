@@ -121,6 +121,7 @@ class ExercisePickerPopup {
             dao: SuperSetDao
         ) {
             val coroutineScope = rememberCoroutineScope()
+            val userTyping = remember { mutableStateOf(false) }
 
             // Fetch categories initially
             LaunchedEffect(Unit) {
@@ -156,11 +157,8 @@ class ExercisePickerPopup {
                             state.isLoading.value = false
                             state.isSearching.value = false
                         } else {
-                            state.exercises.addAll(
-                                response.exercises.sortBySimilarityOrDefault(
-                                    state.searchQuery.value
-                                )
-                            )
+                            // ElasticSearch returns exercises in order of relevance
+                            state.exercises.addAll(response.exercises)
                             state.totalPages.value =
                                 (response.total + response.pageSize - 1) / response.pageSize
                         }
@@ -220,11 +218,13 @@ class ExercisePickerPopup {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Search Bar for Exercises
-                    TextField(value = state.searchQuery.value,
+                    TextField(
+                        value = state.searchQuery.value,
                         maxLines = 1,
                         onValueChange = {
                             state.searchQuery.value = it
                             state.isSearching.value = true
+                            userTyping.value = it.isNotEmpty()
 
                             coroutineScope.launch {
                                 state.triggerSearch.value = false
@@ -234,6 +234,8 @@ class ExercisePickerPopup {
                                     TAG,
                                     "Search Query: $it, equal: ${state.searchQuery.value == it}"
                                 )
+
+                                userTyping.value = false
 
                                 // no change == user stopped typing
                                 if (state.searchQuery.value == it && state.searchQuery.value.isNotEmpty()) {
@@ -269,16 +271,16 @@ class ExercisePickerPopup {
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                items(state.exercises.filter { exercise ->
-                                    state.searchQuery.value.isEmpty() || exercise.title.contains(
-                                        state.searchQuery.value, ignoreCase = true
-                                    )
-                                }) { exercise ->
-                                    ExerciseItem(exercise, state.checkedExercises) {
-                                        state.selectedExercise.value = it
-                                        state.showPopup.value = true
+                                // user isn't searching
+                                if (!userTyping.value) {
+                                    items(state.exercises) { exercise ->
+                                        ExerciseItem(exercise, state.checkedExercises) {
+                                            state.selectedExercise.value = it
+                                            state.showPopup.value = true
+                                        }
                                     }
                                 }
+
                                 item {
                                     val text = when {
                                         state.isSearching.value -> "Loading..."

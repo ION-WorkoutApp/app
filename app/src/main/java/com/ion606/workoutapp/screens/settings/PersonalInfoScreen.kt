@@ -1,5 +1,6 @@
 package com.ion606.workoutapp.screens.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,7 +44,6 @@ fun PersonalInfoScreen(
     val user = userManager.getAllUserData() ?: return
 
     // State variables
-    var email by remember { mutableStateOf(user.email) }
     var password by remember { mutableStateOf("") } // Handle securely
     var name by remember { mutableStateOf(user.name) }
     var age by remember { mutableStateOf(user.age.toString()) }
@@ -80,11 +80,27 @@ fun PersonalInfoScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = user.email,
+                enabled = false,
+                onValueChange = { },
                 label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(false) { }
             )
+
+            if (userManager.getURL()?.isNotEmpty() == true) {
+                OutlinedTextField(
+                    value = userManager.getURL()!!,
+                    enabled = false,
+                    onValueChange = { },
+                    label = { Text("Server URL") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(false) { }
+                )
+            }
+
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -147,7 +163,6 @@ fun PersonalInfoScreen(
                         val result = userManager.updateUserData(
                             SanitizedUserDataObj(
                                 user.copy(
-                                    email = email,
                                     name = name,
                                     age = ageInt,
                                     gender = gender,
@@ -156,6 +171,7 @@ fun PersonalInfoScreen(
                                 )
                             )
                         )
+
                         if (result.first) {
                             alertmsg.value = Pair("Success", "Personal information updated.")
                         } else {

@@ -110,7 +110,7 @@ fun List<Exercise>.sortBySimilarityOrDefault(query: String?): List<Exercise> {
     return if (!query.isNullOrEmpty()) {
         this.sortedBy { it.title.similarityTo(query) } // Sort by similarity (lower is better)
     } else {
-        this.sortedBy({ it.title }) // Default sort (alphabetical)
+        this.sortedBy { it.title } // Default sort (alphabetical)
     }
 }
 

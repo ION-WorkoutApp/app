@@ -27,7 +27,7 @@ fun Tooltip(
     ) {
         Box(
             modifier = modifier
-                .background(Color.Black, shape = MaterialTheme.shapes.medium)
+                .background(Color.Gray, shape = MaterialTheme.shapes.medium)
                 .padding(8.dp)
         ) {
             BasicText(

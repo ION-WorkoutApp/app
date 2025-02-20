@@ -3,9 +3,10 @@ package com.ion606.workoutapp.screens.activeExercise
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -75,7 +76,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.ion606.workoutapp.MainActivity
 import com.ion606.workoutapp.R
 import com.ion606.workoutapp.dataObjects.ActiveExercise
 import com.ion606.workoutapp.dataObjects.ExerciseMeasureType
@@ -86,9 +86,11 @@ import com.ion606.workoutapp.elements.InputField
 import com.ion606.workoutapp.elements.InputFieldCompact
 import com.ion606.workoutapp.elements.Tooltip
 import com.ion606.workoutapp.helpers.Alerts
+import com.ion606.workoutapp.helpers.AppLifecycleObserver
 import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.convertSecondsToTimeString
 import com.ion606.workoutapp.logic.StartTimer
+import com.ion606.workoutapp.managers.CustomAudioManager
 import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -121,12 +123,14 @@ class DisplayActiveExercise {
         }
 
 
+        @RequiresApi(Build.VERSION_CODES.O)
         @Composable
         private fun TimeHelper(
             nhelper: NotificationManager,
             exercise: ActiveExercise,
             timerSetr: MutableState<ExerciseSetDataObj?>,
             currentTimerSet: Int,
+            context: Context,
             cb: (Boolean) -> Unit
         ) {
             val timerTitle = if (exercise.exercise.perSide) {
@@ -140,20 +144,31 @@ class DisplayActiveExercise {
                 remainingTime = timerSetr.value!!.value,
                 onFinishCB = { didFinish ->
                     if (didFinish) {
-                        nhelper.sendNotificationIfUnfocused(
-                            title = "Set Timer",
-                            message = "Timer completed for ${exercise.exercise.title}",
-                            intents = listOf(
-                                "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
-                                "exerciseId" to exercise.exercise.exerciseId
+                        var showNotif = false;
+                        if (AppLifecycleObserver.isAppInForeground) {
+                            CustomAudioManager.playNotificationSound(context) { showNotif = true };
+                        }
+                        else showNotif = true;
+
+                        if (showNotif) {
+                            nhelper.sendNotification(
+                                title = "Set Timer",
+                                message = "Timer completed for ${exercise.exercise.title}",
+                                intents = listOf(
+                                    "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                                    "exerciseId" to exercise.exercise.exerciseId
+                                )
                             )
-                        )
+                            showNotif = false;
+                        }
                     }
+
                     cb(didFinish)
                 })
         }
 
 
+        @RequiresApi(Build.VERSION_CODES.O)
         @SuppressLint("MutableCollectionMutableState", "UnusedContentLambdaTargetStateParameter")
         @Composable
         fun DisplayActiveExerciseScreen(
@@ -284,7 +299,7 @@ class DisplayActiveExercise {
 
                 // primary
                 timerSetr.value?.let { primarySet ->
-                    TimeHelper(nhelper, exercise, timerSetr, 0) { finished ->
+                    TimeHelper(nhelper, exercise, timerSetr, 0, context) { finished ->
                         if (finished && exercise.exercise.perSide) {
                             secondaryTimerSetr.value = primarySet
                         }
@@ -299,7 +314,7 @@ class DisplayActiveExercise {
 
                 // secondary
                 secondaryTimerSetr.value?.let { secondSet ->
-                    TimeHelper(nhelper, exercise, secondaryTimerSetr, 1) { finished ->
+                    TimeHelper(nhelper, exercise, secondaryTimerSetr, 1, context) { finished ->
                         if (finished) {
                             secondaryTimerSetr.value = null
                             timerSetr.value = null
@@ -353,14 +368,17 @@ class DisplayActiveExercise {
                         // cancel progress notification
                         nhelper.cancelNotification()
 
-                        nhelper.sendNotificationIfUnfocused(
-                            title = "Rest Timer",
-                            message = "Rest timer completed for ${exercise.exercise.title}",
-                            intents = listOf(
-                                "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
-                                "exerciseId" to exercise.exercise.exerciseId
+                        if (AppLifecycleObserver.isAppInForeground) CustomAudioManager.playNotificationSound(context);
+                        else {
+                            nhelper.sendNotification(
+                                title = "Rest Timer",
+                                message = "Rest timer completed for ${exercise.exercise.title}",
+                                intents = listOf(
+                                    "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                                    "exerciseId" to exercise.exercise.exerciseId
+                                )
                             )
-                        )
+                        }
 
                         coroutineScope.launch {
                             logSet(

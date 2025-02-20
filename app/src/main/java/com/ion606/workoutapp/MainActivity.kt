@@ -32,6 +32,7 @@ import com.ion606.workoutapp.helpers.NotificationManager
 import com.ion606.workoutapp.helpers.TopScreenMessageText
 import com.ion606.workoutapp.helpers.cancelWorkoutReminder
 import com.ion606.workoutapp.helpers.scheduleWorkoutReminder
+import com.ion606.workoutapp.managers.CustomAudioManager
 import com.ion606.workoutapp.managers.DataManager
 import com.ion606.workoutapp.managers.SyncManager
 import com.ion606.workoutapp.managers.UserManager
@@ -79,7 +80,7 @@ class MainActivity : ComponentActivity() {
                 val errmsg = remember { mutableStateOf("") }
                 if (errmsg.value.isNotEmpty()) {
                     Alerts.ShowAlert(
-                        { finish() },
+                        { if (it) finish() else errmsg.value = "" },
                         "Error",
                         errmsg.value
                     )
