@@ -76,6 +76,30 @@ fun MonthlyCalendar(
             it.year == year && it.monthValue == month
         }.map { it.dayOfMonth }
 
+        // header row for days of week
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { dayName ->
+                    Box(
+                        modifier = modifier
+                            .size(48.dp)
+                            .background(Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = dayName,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
         // create rows for the month
         items(calendarDays.chunked(7)) { week ->
             Row(

@@ -133,6 +133,7 @@ class DisplayActiveExercise {
             context: Context,
             cb: (Boolean) -> Unit
         ) {
+            val startMainTimer = remember { mutableStateOf(false) }
             val timerTitle = if (exercise.exercise.perSide) {
                 if (currentTimerSet == 1) "Left Side Timer"
                 else "Right Side Timer"
@@ -140,31 +141,42 @@ class DisplayActiveExercise {
                 "Set Timer"
             }
 
-            StartTimer(headerText = timerTitle,
-                remainingTime = timerSetr.value!!.value,
-                onFinishCB = { didFinish ->
-                    if (didFinish) {
-                        var showNotif = false;
-                        if (AppLifecycleObserver.isAppInForeground) {
-                            CustomAudioManager.playNotificationSound(context) { showNotif = true };
-                        }
-                        else showNotif = true;
-
-                        if (showNotif) {
-                            nhelper.sendNotification(
-                                title = "Set Timer",
-                                message = "Timer completed for ${exercise.exercise.title}",
-                                intents = listOf(
-                                    "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
-                                    "exerciseId" to exercise.exercise.exerciseId
-                                )
-                            )
-                            showNotif = false;
-                        }
-                    }
-
-                    cb(didFinish)
+            // 3 second countdown timer
+            StartTimer(headerText = "Starting in",
+                remainingTime = 3,
+                onFinishCB = { _ ->
+                    startMainTimer.value = true
                 })
+
+            if (startMainTimer.value) {
+                StartTimer(headerText = timerTitle,
+                    remainingTime = timerSetr.value!!.value,
+                    onFinishCB = { didFinish ->
+                        if (didFinish) {
+                            var showNotif = false;
+                            if (AppLifecycleObserver.isAppInForeground) {
+                                CustomAudioManager.playNotificationSound(context) {
+                                    showNotif = true
+                                };
+                            } else showNotif = true;
+
+                            if (showNotif) {
+                                nhelper.sendNotification(
+                                    title = "Set Timer",
+                                    message = "Timer completed for ${exercise.exercise.title}",
+                                    intents = listOf(
+                                        "action" to "com.ion606.workoutapp.action.OPEN_ACTIVE_EXERCISE",
+                                        "exerciseId" to exercise.exercise.exerciseId
+                                    )
+                                )
+                                showNotif = false;
+                            }
+                        }
+
+                        startMainTimer.value = false;
+                        cb(didFinish)
+                    })
+            }
         }
 
 
@@ -343,7 +355,7 @@ class DisplayActiveExercise {
                     TAG, "PManager is null, timer bar will not be displayed"
                 );
 
-                // show rest timer if needed
+                // show rest timer
                 StartTimer(headerText = "Rest Timer",
                     remainingTime = restTimer.intValue,
                     onTickCB = { remainingTime ->
