@@ -228,7 +228,7 @@ fun DarkThemeWorkoutResponse(
                         }
                     }
 
-                    // Handle top refresh (if needed)
+                    // Handle top refresh
                     LaunchedEffect(reachedTop) {
                         if (reachedTop && pageManager.currentPage > 0 && !isLoading) {
                             isLoading = true

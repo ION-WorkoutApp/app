@@ -179,13 +179,25 @@ class DisplayActiveExercise {
             }
         }
 
+        private fun saveTimerState(context: Context, timerKey: String, remainingTime: Int) {
+            val prefs = context.getSharedPreferences("TimerState", Context.MODE_PRIVATE)
+            val editor = prefs.edit()
+            editor.putInt(timerKey, remainingTime)
+            editor.apply()
+        }
+
+        private fun loadTimerState(context: Context, timerKey: String): Int {
+            val prefs = context.getSharedPreferences("TimerState", Context.MODE_PRIVATE)
+            return prefs.getInt(timerKey, 0)
+        }
+
 
         @RequiresApi(Build.VERSION_CODES.O)
         @SuppressLint("MutableCollectionMutableState", "UnusedContentLambdaTargetStateParameter")
         @Composable
         fun DisplayActiveExerciseScreen(
             activeExercise: State<ActiveExercise?>,
-            triggerExerciseSave: (ActiveExercise, SuperSet, Boolean) -> Unit,
+            triggerExerciseSaveCB: (ActiveExercise, SuperSet, Boolean) -> Unit,
             currentSuperset: State<SuperSet?>,
             context: Context,
             nhelper: NotificationManager,
@@ -210,6 +222,11 @@ class DisplayActiveExercise {
             val isTimerVisible = remember { mutableStateOf(false) }
             val currentSetTime = remember { mutableIntStateOf(0) }
 
+            val savedSetTimer = loadTimerState(context, "exercise_${exercise.exercise.exerciseId}_timer")
+            if (savedSetTimer > 0) {
+                timerSetr.value = ExerciseSetDataObj(value = savedSetTimer)
+            }
+
             // units
             val userWeightUnit = userManager.getUserData()?.weightUnit ?: "lbs"
             val userDistanceUnit = userManager.getUserData()?.distanceUnit ?: "km"
@@ -219,6 +236,11 @@ class DisplayActiveExercise {
             val listState = rememberLazyListState()
             val coroutineScope = rememberCoroutineScope()
             var shouldLogSet by remember { mutableStateOf(false) }
+
+            val triggerExerciseSave = { a: ActiveExercise, b: SuperSet, c: Boolean ->
+                saveTimerState(context, "exercise_${exercise.exercise.exerciseId}_timer", restTimer.intValue)
+                triggerExerciseSaveCB(a, b, c);
+            }
 
             // update itemList whenever our superset or exercise changes
             LaunchedEffect(currentSuperset.value, exercise) {

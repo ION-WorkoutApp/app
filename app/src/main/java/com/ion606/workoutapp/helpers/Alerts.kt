@@ -203,14 +203,16 @@ class Alerts {
                     maxValue = 59
                     value = second
                 }
-                container.addView(secondPicker)
 
+                container.addView(secondPicker)
                 builder.setView(container)
 
                 builder.setPositiveButton("OK") { _, _ ->
                     // get the selected minute and second
                     CB("${minutePicker.value * 60 + secondPicker.value}")
                 }
+
+                builder.setOnDismissListener { CB("") }
             } else {
                 // create an edit text for text input
                 val input = EditText(context).apply {

@@ -116,7 +116,7 @@ fun SettingsNavGraph(
         }
 
         composable(Screen.Workout.route) {
-            WorkoutHomeScreen(navController)
+            WorkoutHomeScreen(navController, dao)
         }
 
         composable(Screen.ActiveWorkout.route) {

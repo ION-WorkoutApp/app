@@ -4,8 +4,10 @@ package com.ion606.workoutapp.screens.activeExercise
 import SelectWorkoutPopup
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -82,10 +84,22 @@ suspend fun List<ActiveExercise>.saveAll(dao: ActiveExerciseDao) {
 }
 
 
-class WorkoutTimerObject {
+class WorkoutTimerObject(private val context: Context) {
     var time by mutableIntStateOf(0)
     var totalTime by mutableIntStateOf(0)
     var paused by mutableStateOf(false)
+
+    init {
+        val prefs = context.getSharedPreferences("timer", Context.MODE_PRIVATE)
+        this.time = prefs.getInt("time", 0)
+        this.totalTime = prefs.getInt("totalTime", 0)
+    }
+
+    fun save() {
+        val prefs = context.getSharedPreferences("timer", Context.MODE_PRIVATE)
+        prefs.edit().putInt("time", this.time).apply()
+        prefs.edit().putInt("totalTime", this.totalTime).apply()
+    }
 }
 
 @Composable
@@ -97,6 +111,9 @@ fun Timer(workoutTime: WorkoutTimerObject) {
                 workoutTime.time++
             }
             workoutTime.totalTime++
+
+            // save 4 times/minute
+            if (workoutTime.totalTime % 15 == 0) workoutTime.save();
         }
     }
 }
@@ -118,8 +135,8 @@ fun TimerDisplay(workoutTime: WorkoutTimerObject) {
 
 class ExerciseScreen {
     companion object {
-
         @Composable
+        @RequiresApi(Build.VERSION_CODES.O)
         @SuppressLint("UnusedContentLambdaTargetStateParameter")
         fun CreateScreen(
             userManager: UserManager,
@@ -143,8 +160,9 @@ class ExerciseScreen {
             val expandDropdown = remember { mutableStateOf(false) }
             val endWorkout = remember { mutableIntStateOf(0) }
             var saveWorkout by remember { mutableStateOf(false) }
-            val workoutTime = remember { WorkoutTimerObject() }
+            val workoutTime = remember { WorkoutTimerObject(context) }
             val finalExercises = remember { mutableListOf<SuperSet>() }
+            var isLoading by remember { mutableStateOf(true) }
 
             // Handle back navigation
             BackHandler {
@@ -170,8 +188,20 @@ class ExerciseScreen {
 
             // Initialize supersets from the database
             LaunchedEffect(Unit) {
-                val fetchedSupersets = dao.getAll() // Fetch all saved supersets from the database
+                val fetchedSupersets = dao.getAll()
                 workoutViewModel.initializeSupersets(fetchedSupersets)
+
+                Log.d(TAG, "Supersets fetched from DAO ${fetchedSupersets.size}")
+                isLoading = false
+            }
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                ) {
+                    Text("Loading...")
+                }
+                return
             }
 
             if (dispSelPop.value) {
@@ -184,19 +214,15 @@ class ExerciseScreen {
                 var workoutName by remember { mutableStateOf<String?>(null) }
                 var error by remember { mutableStateOf("") }
 
-                CreateAlertDialog(
-                    "Enter saved workout name", context, CB = {
-                        if (!it.isNullOrEmpty()) workoutName = it
-                        else error = "Failed to read workout name"
-                    }
-                )
+                CreateAlertDialog("Enter saved workout name", context, CB = {
+                    if (!it.isNullOrEmpty()) workoutName = it
+                    else error = "Failed to read workout name"
+                })
 
                 if (error.isNotEmpty()) {
-                    CreateAlertDialog(
-                        error, context, CB = {
-                            error = ""
-                        }
-                    )
+                    CreateAlertDialog(error, context, CB = {
+                        error = ""
+                    })
                 } else if (!workoutName.isNullOrEmpty()) {
                     Log.d(TAG, "Saving workout with name: $workoutName")
 
@@ -223,8 +249,7 @@ class ExerciseScreen {
 
             if (finalExercises.isNotEmpty()) {
                 WorkoutSummaryBottomSheet(
-                    activeExercises = finalExercises.flatMap { it.exercises },
-                    navController
+                    activeExercises = finalExercises.flatMap { it.exercises }, navController
                 )
             }
 
@@ -480,7 +505,7 @@ class ExerciseScreen {
                         nhelper = nhelper,
                         currentSuperset = currentSuperset,
                         dao = dao,
-                        triggerExerciseSave = { exercise: ActiveExercise, superset: SuperSet, exitScreen: Boolean ->
+                        triggerExerciseSaveCB = { exercise: ActiveExercise, superset: SuperSet, exitScreen: Boolean ->
                             Log.d(
                                 TAG,
                                 "Saving exercise (in ExerciseScreen): ${exercise.exercise.title}. Is an exit? $exitScreen"

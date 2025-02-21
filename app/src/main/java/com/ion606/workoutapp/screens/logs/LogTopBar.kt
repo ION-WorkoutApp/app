@@ -3,6 +3,7 @@ package com.ion606.workoutapp.screens.logs
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -284,7 +285,7 @@ fun getLocalDayRangeInUTC(
 @SuppressLint("NewApi")
 fun getCurrentWeekDays(currentMonth: Int, currentYear: Int): List<Int> {
     val now = transformTime(currentMonth, currentYear, ZonedDateTime.now().dayOfMonth)
-    val firstDayOfWeek = now.minusDays((now.dayOfWeek.value - 1).toLong())
+    val firstDayOfWeek = now.minusDays((now.dayOfWeek.value).toLong())
     return (0..6).map { firstDayOfWeek.plusDays(it.toLong()).dayOfMonth }
 }
 
