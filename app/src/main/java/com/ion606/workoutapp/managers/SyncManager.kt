@@ -21,6 +21,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
+import java.net.URLEncoder
 import kotlin.coroutines.resume
 
 private const val TAG = "SyncManager"
@@ -108,7 +109,7 @@ class SyncManager(private var baseURL: String? = null, private var context: Cont
 
         if (path == "isindebugmode") Log.d(TAG, "debug pinging $baseURLToUse")
         else if (BuildConfig.SENSITIVE_LOGGING_ENABLED) Log.d(
-            TAG, "Debug: Sending a $method request to $urlToUse with data $jsonData"
+            TAG, "Debug: Sending a $method request to ${URLEncoder.encode(urlToUse)} with data $jsonData"
         )
 
         val request = Request.Builder().url(urlToUse).headers(headers.toMap().toHeaders())

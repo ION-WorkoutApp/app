@@ -20,5 +20,4 @@ temp.*
 /workspace.xml
 .attach_pid*
 .idea/discord.xml
-app/release/
-
+app/release/*

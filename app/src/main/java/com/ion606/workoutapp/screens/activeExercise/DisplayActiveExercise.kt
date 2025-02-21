@@ -108,6 +108,7 @@ fun stringToInt(s: String): Int {
 }
 
 
+@SuppressLint("ApplySharedPref")
 class DisplayActiveExercise {
     companion object {
         private fun getStoredTime(context: Context, key: String = "restTime"): Int {
@@ -122,6 +123,10 @@ class DisplayActiveExercise {
             editor.apply()
         }
 
+        private fun clearRestTime(context: Context, key: String) {
+            val prefs: SharedPreferences = context.getSharedPreferences(key, MODE_PRIVATE)
+            prefs.edit().clear().commit()
+        }
 
         @RequiresApi(Build.VERSION_CODES.O)
         @Composable
@@ -179,18 +184,6 @@ class DisplayActiveExercise {
             }
         }
 
-        private fun saveTimerState(context: Context, timerKey: String, remainingTime: Int) {
-            val prefs = context.getSharedPreferences("TimerState", Context.MODE_PRIVATE)
-            val editor = prefs.edit()
-            editor.putInt(timerKey, remainingTime)
-            editor.apply()
-        }
-
-        private fun loadTimerState(context: Context, timerKey: String): Int {
-            val prefs = context.getSharedPreferences("TimerState", Context.MODE_PRIVATE)
-            return prefs.getInt(timerKey, 0)
-        }
-
 
         @RequiresApi(Build.VERSION_CODES.O)
         @SuppressLint("MutableCollectionMutableState", "UnusedContentLambdaTargetStateParameter")
@@ -222,9 +215,10 @@ class DisplayActiveExercise {
             val isTimerVisible = remember { mutableStateOf(false) }
             val currentSetTime = remember { mutableIntStateOf(0) }
 
-            val savedSetTimer = loadTimerState(context, "exercise_${exercise.exercise.exerciseId}_timer")
+            val savedSetTimer = getStoredTime(context, "exercise_${exercise.exercise.exerciseId}_timer");
             if (savedSetTimer > 0) {
-                timerSetr.value = ExerciseSetDataObj(value = savedSetTimer)
+                timerSetr.value = ExerciseSetDataObj(value = savedSetTimer);
+                setStoredTime(context, 0, "exercise_${exercise.exercise.exerciseId}_timer");
             }
 
             // units
@@ -238,7 +232,7 @@ class DisplayActiveExercise {
             var shouldLogSet by remember { mutableStateOf(false) }
 
             val triggerExerciseSave = { a: ActiveExercise, b: SuperSet, c: Boolean ->
-                saveTimerState(context, "exercise_${exercise.exercise.exerciseId}_timer", restTimer.intValue)
+                clearRestTime(context, "exercise_${exercise.exercise.exerciseId}_timer");
                 triggerExerciseSaveCB(a, b, c);
             }
 
@@ -297,7 +291,7 @@ class DisplayActiveExercise {
                     currentSetTime.intValue = setItem.value
                     while (currentSetTime.intValue > 0) {
                         delay(1000)
-                        setStoredTime(context, currentSetTime.intValue, "repTimer")
+                        setStoredTime(context, currentSetTime.intValue, "exercise_${exercise.exercise.exerciseId}_timer")
                         currentSetTime.intValue -= 1
                     }
                     isTimerVisible.value = false
@@ -307,7 +301,7 @@ class DisplayActiveExercise {
                     } else {
                         // done with the timer
                         timerSetr.value = null
-                        setStoredTime(context, 0, "repTimer")
+                        setStoredTime(context, 0, "exercise_${exercise.exercise.exerciseId}_timer")
                     }
                 }
             }
@@ -318,10 +312,12 @@ class DisplayActiveExercise {
                     currentSetTime.intValue = setItem.value
                     while (currentSetTime.intValue > 0) {
                         delay(1000)
-                        setStoredTime(context, currentSetTime.intValue, "repTimer")
+                        setStoredTime(context, currentSetTime.intValue, "exercise_${exercise.exercise.exerciseId}_timer")
                         currentSetTime.intValue -= 1
                     }
-                    setStoredTime(context, 0, "repTimer")
+
+                    clearRestTime(context, "exercise_${exercise.exercise.exerciseId}_timer");
+                    setStoredTime(context, 0, "exercise_${exercise.exercise.exerciseId}_timer")
                     isTimerVisible.value = false
                     secondaryTimerSetr.value = null
                 }
@@ -391,7 +387,7 @@ class DisplayActiveExercise {
                     },
                     onFinishCB = { _ ->
                         // doesn't matter if it was cancelled or not bc the time needs to be logged either way
-                        setStoredTime(context, 0)
+                        clearRestTime(context, "exercise_${exercise.exercise.exerciseId}_timer");
 
                         // remove progress bar
                         pManager?.setProgress(0, 0, false)
