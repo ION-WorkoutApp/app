@@ -52,13 +52,18 @@ ION Workout App is a self‑hosted workout solution designed to help users track
 
 ## Installation 🛠️
 
-### prerequisites
+### Prerequisites
+
+> [!TIP]
+> Looking for the mobile app installer? The APK is [here](https://github.com/ION-WorkoutApp/app-installer/releases/latest)
+
+### Prerequisites
 
 - [android studio](https://developer.android.com/studio) (latest version recommended) 📱
 - kotlin (configured within android studio) 🔧
 - a physical android device or an emulator 📲
 
-### setup instructions
+### Setup Instructions
 
 1. **clone the repository:**
 
