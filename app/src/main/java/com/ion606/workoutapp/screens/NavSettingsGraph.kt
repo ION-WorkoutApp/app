@@ -126,7 +126,7 @@ fun SettingsNavGraph(
         }
 
         composable(Screen.UserStatsScreen.route) {
-            UserStatsScreen.WorkoutStatsScreen(context, dataManager, navController)
+            UserStatsScreen.WorkoutStatsScreen(context, dataManager, userManager, navController)
         }
 
         composable(Screen.RestartApp.route) {

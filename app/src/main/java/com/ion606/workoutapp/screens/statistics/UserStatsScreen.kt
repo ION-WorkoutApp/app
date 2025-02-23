@@ -72,9 +72,11 @@ import com.ion606.workoutapp.dataObjects.User.DailyStat
 import com.ion606.workoutapp.dataObjects.User.MonthlyWorkout
 import com.ion606.workoutapp.dataObjects.User.PersonalBest
 import com.ion606.workoutapp.dataObjects.User.UserStats
+import com.ion606.workoutapp.helpers.UnitConverters
 import com.ion606.workoutapp.helpers.generateRandomVibrantColor
 import com.ion606.workoutapp.helpers.saveJsonContentToDownloads
 import com.ion606.workoutapp.managers.DataManager
+import com.ion606.workoutapp.managers.UserManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -88,6 +90,7 @@ class UserStatsScreen {
         fun WorkoutStatsScreen(
             context: Context,
             dataManager: DataManager,
+            userManager: UserManager,
             navController: NavController
         ) {
             val scope = rememberCoroutineScope();
@@ -146,6 +149,7 @@ class UserStatsScreen {
                             innerPadding = innerPadding,
                             scope = scope,
                             dataManager = dataManager,
+                            userManager = userManager,
                             context = context
                         )
 
@@ -161,6 +165,7 @@ class UserStatsScreen {
             innerPadding: PaddingValues,
             scope: CoroutineScope,
             dataManager: DataManager,
+            userManager: UserManager,
             context: Context
         ) {
             statsMut.value?.let { stats ->
@@ -284,7 +289,7 @@ class UserStatsScreen {
 
                     // 4. personal bests
                     item {
-                        PersonalBestsSection(stats.performance.personalBests)
+                        PersonalBestsSection(stats.performance.personalBests, userManager)
                     }
 
                     // 5. consistency
@@ -809,7 +814,9 @@ class UserStatsScreen {
 
         // personal bests section
         @Composable
-        private fun PersonalBestsSection(bests: List<PersonalBest>) {
+        private fun PersonalBestsSection(bests: List<PersonalBest>, um: UserManager) {
+            val udata = um.getUserData();
+
             Card {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("🥇 Personal Bests", style = MaterialTheme.typography.headlineSmall)
@@ -821,7 +828,9 @@ class UserStatsScreen {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(best.title, style = MaterialTheme.typography.bodyLarge)
-                            Text("${best.maxWeight ?: best.maxReps} ${if (best.maxWeight != null) "kg" else "reps"}")
+
+                            val bestWeightConverted = if (udata?.weightUnit == "lbs") best.maxWeight?.times(2.20462)?.toInt() else best.maxWeight;
+                            Text("${bestWeightConverted ?: best.maxReps} ${if (best.maxWeight != null) udata?.weightUnit else "reps"}")
                         }
                         Divider(modifier = Modifier.padding(vertical = 4.dp))
                     }
