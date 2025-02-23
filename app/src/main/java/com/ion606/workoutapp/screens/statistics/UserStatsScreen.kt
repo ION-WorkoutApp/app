@@ -1,7 +1,9 @@
 package com.ion606.workoutapp.screens.statistics;
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -80,6 +82,7 @@ import kotlin.math.roundToInt
 
 class UserStatsScreen {
     companion object {
+        @RequiresApi(Build.VERSION_CODES.O)
         @OptIn(ExperimentalMaterial3Api::class)
         @Composable
         fun WorkoutStatsScreen(
@@ -232,7 +235,7 @@ class UserStatsScreen {
 
                                 KeyMetricRow(
                                     label = "Average Session",
-                                    value = "${stats.timeAndDuration.averageWorkoutTime.roundToInt()} min"
+                                    value = "${stats.timeAndDuration.averageWorkoutTime.roundToInt() / 60} min"
                                 )
                             }
                         }
@@ -524,9 +527,12 @@ class UserStatsScreen {
             data: Map<String, Int>, title: String, modifier: Modifier = Modifier
         ) {
             val maxValue = data.values.maxOrNull()?.toFloat() ?: 1f;
+
+            // swapped to stable keys bc otherwise it changes every time you scroll in/out of view
+            val stableKeys = remember(data.keys.toList()) { data.keys.toList() };
+
             // build a map from each label to a vibrant color
-            val colorsMap =
-                remember(data) { data.keys.associateWith { generateRandomVibrantColor() } };
+            val colorsMap = remember(stableKeys) { stableKeys.associateWith { generateRandomVibrantColor() } };
 
             Column(
                 modifier = modifier

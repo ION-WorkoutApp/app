@@ -26,6 +26,7 @@ android {
     buildTypes {
         debug {
             buildConfigField("boolean", "SENSITIVE_LOGGING_ENABLED", "true")
+            applicationIdSuffix = ".debug"
         }
 
         release {

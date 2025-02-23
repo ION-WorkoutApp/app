@@ -3,11 +3,7 @@ package com.ion606.workoutapp.screens.statistics
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,41 +14,94 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.google.gson.Gson
 import com.ion606.workoutapp.dataObjects.User.MuscleRecoverIndividual
 import com.ion606.workoutapp.dataObjects.User.MuscleRecovery
+import com.ion606.workoutapp.dataObjects.User.MuscleRecoverySimple
 import com.ion606.workoutapp.dataObjects.User.UserStats
-import com.ion606.workoutapp.screens.logs.formatTimestamp
-import com.ion606.workoutapp.screens.statistics.UserStatsScreen.Companion.DonutChart
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 
-fun muscleRecoveryToMap(mr: MuscleRecovery): Map<String, MuscleRecoverIndividual> {
-    return mapOf(
+fun convertToSimpleRecovery(detailed: MuscleRecovery): MuscleRecoverySimple {
+    fun averageRecovery(muscles: List<MuscleRecoverIndividual>): MuscleRecoverIndividual {
+        val avgPercentage = muscles.map { it.recoveryPercentage }.average().toFloat()
+        val avgHours = muscles.map { it.personalizedRecoveryHours }.average().toFloat()
+        return MuscleRecoverIndividual(
+            lastUsed = "Never",  // This would need proper handling
+            recoveryPercentage = avgPercentage,
+            personalizedRecoveryHours = avgHours
+        )
+    }
+
+    return MuscleRecoverySimple(
+        chest = detailed.chest,
+        back = averageRecovery(
+            listOf(
+                detailed.lats,
+                detailed.lowerBack,
+                detailed.middleBack,
+                detailed.traps
+            )
+        ),
+        legs = averageRecovery(
+            listOf(
+                detailed.adductors,
+                detailed.abductors,
+                detailed.calves,
+                detailed.glutes,
+                detailed.hamstrings,
+                detailed.quadriceps
+            )
+        ),
+        arms = averageRecovery(
+            listOf(
+                detailed.biceps,
+                detailed.triceps,
+                detailed.forearms
+            )
+        ),
+        core = detailed.abdominals,
+        shoulders = averageRecovery(
+            listOf(
+                detailed.shoulders,
+                detailed.neck
+            )
+        ),
+        lastUpdated = detailed.lastUpdated
+    )
+}
+
+fun muscleRecoveryToMap(
+    mr: MuscleRecovery,
+    isSimple: Boolean = false
+): Map<String, MuscleRecoverIndividual> {
+    return if (isSimple) convertToSimpleRecovery(mr).let {
+        mapOf(
+            "Chest" to it.chest,
+            "Back" to it.back,
+            "Legs" to it.legs,
+            "Arms" to it.arms,
+            "Core" to it.core,
+            "Shoulders" to it.shoulders
+        )
+    }
+    else mapOf(
         "Abdominals" to mr.abdominals,
         "Adductors" to mr.adductors,
         "Abductors" to mr.abductors,
@@ -76,24 +125,49 @@ fun muscleRecoveryToMap(mr: MuscleRecovery): Map<String, MuscleRecoverIndividual
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun RecoveryContent(stats: UserStats) {
-    val recoveryData = remember(stats) { muscleRecoveryToMap(stats.muscleRecovery) }
+    var showSimple by remember { mutableStateOf(false) }
+    val recoveryData = remember(stats, showSimple) {
+        muscleRecoveryToMap(stats.muscleRecovery, showSimple)
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // header (card)
-        val instant = Instant.parse(stats.muscleRecovery.lastUpdated)
-        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss")
-            .withZone(ZoneId.systemDefault())
+        val lastUpdated = stats.muscleRecovery.lastUpdated
+
+        val lastUpdatedText = try {
+            val instant = Instant.parse(lastUpdated)
+            val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss")
+                .withZone(ZoneId.systemDefault())
+            formatter.format(instant)
+        } catch (e: Exception) {
+            Log.e("RecoveryContent", "no last updated time")
+            "Unknown"
+        }
 
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("💊 Muscle Recovery", style = MaterialTheme.typography.headlineSmall)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "💊 Muscle Recovery",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Switch(
+                            checked = showSimple,
+                            onCheckedChange = { showSimple = it },
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        Text(
+                            text = if (showSimple) "Simple" else "Detailed",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Last Updated: ${formatter.format(instant)}",
+                        "Last Updated: $lastUpdatedText",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -101,14 +175,15 @@ fun RecoveryContent(stats: UserStats) {
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        item{
+        item {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                recoveryData.entries.sortedByDescending { it.value.recoveryPercentage }.forEach { (muscle, individual) ->
-                    RecoveryBar(muscle, individual.recoveryPercentage.toInt())
-                }
+                recoveryData.entries.sortedByDescending { it.value.recoveryPercentage }
+                    .forEach { (muscle, individual) ->
+                        RecoveryBar(muscle, individual.recoveryPercentage.toInt())
+                    }
             }
         }
     }

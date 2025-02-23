@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ION Workout App</string>
+    <string name="app_name">ION Workout App - DEBUG</string>
     <string name="success_message">Success!</string>
     <string name="contstr">Continue</string>
     <string name="success_image">Success Icon</string>

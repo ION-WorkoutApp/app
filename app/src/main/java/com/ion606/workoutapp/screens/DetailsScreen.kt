@@ -70,6 +70,7 @@ fun DetailsScreen(
 
             withContext(Dispatchers.IO) {
                 dataManager.login()
+
                 //attempt to run refresh token in the background
                 coroutineScope.launch {
                     val result = dataManager.refreshToken()
@@ -213,7 +214,7 @@ fun DetailsScreen(
                     dataManager.clearCache()
                     coroutineScope.launch {
                         dao.deleteAll()
-                        navController.navigate("login_signup")
+                        navController.navigate("restart_app")
                     }
                 }) {
                     Text("Log Out and Try Again")

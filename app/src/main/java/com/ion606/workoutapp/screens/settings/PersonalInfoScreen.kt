@@ -147,8 +147,8 @@ fun PersonalInfoScreen(
                 onClick = {
                     // Validate numeric fields
                     val ageInt = age.toIntOrNull()
-                    val heightInt = height.toIntOrNull()
-                    val weightInt = weight.toIntOrNull()
+                    val heightInt = height.toFloatOrNull()
+                    val weightInt = weight.toFloatOrNull()
 
                     if (ageInt == null || heightInt == null || weightInt == null) {
                         alertmsg.value = Pair(

@@ -130,7 +130,7 @@ fun StartTimer(
                         Button(
                             onClick = {
                                 timer?.cancel()
-                                onFinishCB(true)
+                                onFinishCB(false)
                             },
                             modifier = Modifier
                                 .size(50.dp)

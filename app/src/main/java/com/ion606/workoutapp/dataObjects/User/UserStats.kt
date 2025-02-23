@@ -9,7 +9,7 @@ data class UserStats(
     @SerializedName("exerciseDistribution") val exerciseDistribution: ExerciseDistribution,
     @SerializedName("performance") val performance: Performance,
     @SerializedName("consistency") val consistency: Consistency,
-    @SerializedName("muscleRecovery") val muscleRecovery: MuscleRecovery
+    @SerializedName("muscleRecovery") val muscleRecovery: MuscleRecovery,
 )
 
 data class MuscleRecovery(
@@ -30,6 +30,16 @@ data class MuscleRecovery(
     @SerializedName("Neck") val neck: MuscleRecoverIndividual,
     @SerializedName("Quadriceps") val quadriceps: MuscleRecoverIndividual,
     @SerializedName("Shoulders") val shoulders: MuscleRecoverIndividual,
+    @SerializedName("lastUpdated") val lastUpdated: String? = null
+)
+
+data class MuscleRecoverySimple(
+    @SerializedName("chest") val chest: MuscleRecoverIndividual,
+    @SerializedName("back") val back: MuscleRecoverIndividual,
+    @SerializedName("legs") val legs: MuscleRecoverIndividual,
+    @SerializedName("arms") val arms: MuscleRecoverIndividual,
+    @SerializedName("core") val core: MuscleRecoverIndividual,
+    @SerializedName("shoulders") val shoulders: MuscleRecoverIndividual,
     @SerializedName("lastUpdated") val lastUpdated: String? = null
 )
 

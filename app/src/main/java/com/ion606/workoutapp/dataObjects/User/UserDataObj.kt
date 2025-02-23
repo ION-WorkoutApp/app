@@ -49,8 +49,8 @@ data class UserDataObj(
     val password: String = "", // Handle securely
     val age: Int = 0,
     val gender: String = "",
-    val height: Int = 0, // in centimeters
-    val weight: Int = 0, // in kilograms
+    val height: Float = 0f, // in centimeters
+    val weight: Float = 0f, // in kilograms
     val weightUnit: String = "lbs", // Default to 'lbs'
     val distanceUnit: String = "km", // Default to 'km'
     val fitnessGoal: String = "",
@@ -143,8 +143,8 @@ data class SanitizedUserDataObj(
     val name: String = "",
     val age: Int = 0,
     val gender: String = "",
-    val height: Int = 0,
-    val weight: Int = 0,
+    val height: Float = 0f,
+    val weight: Float = 0f,
     val weightUnit: String = "lbs",
     val distanceUnit: String = "km",
     val fitnessGoal: String = "",

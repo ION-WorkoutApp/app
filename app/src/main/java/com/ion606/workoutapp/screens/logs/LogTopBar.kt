@@ -285,7 +285,7 @@ fun getLocalDayRangeInUTC(
 @SuppressLint("NewApi")
 fun getCurrentWeekDays(currentMonth: Int, currentYear: Int): List<Int> {
     val now = transformTime(currentMonth, currentYear, ZonedDateTime.now().dayOfMonth)
-    val firstDayOfWeek = now.minusDays((now.dayOfWeek.value).toLong())
+    val firstDayOfWeek = now.minusDays((now.dayOfWeek.value % 7).toLong())
     return (0..6).map { firstDayOfWeek.plusDays(it.toLong()).dayOfMonth }
 }
 
