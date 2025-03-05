@@ -1,0 +1,42 @@
+name: Check Version Change
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract base versionName
+        id: base_version
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          VERSION=$(git show "$BASE_SHA:app/build.gradle.kts" | grep -E 'versionName\s*=\s*"[^"]+"' | cut -d '"' -f 2)
+          echo "BASE_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract head versionName
+        id: head_version
+        run: |
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          VERSION=$(git show "$HEAD_SHA:app/build.gradle.kts" | grep -E 'versionName\s*=\s*"[^"]+"' | cut -d '"' -f 2)
+          echo "HEAD_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        run: |
+          if [ "${{ steps.base_version.outputs.BASE_VERSION }}" = "${{ steps.head_version.outputs.HEAD_VERSION }}" ]; then
+            echo "versionName (${{ steps.head_version.outputs.HEAD_VERSION }}) not updated"
+            exit 1
+          else
+            echo "Version updated to ${{ steps.head_version.outputs.HEAD_VERSION }}"
+          fi
+          
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true

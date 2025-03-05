@@ -21,5 +21,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Workout App"
+rootProject.name = "ION Workout App"
 include(":app")
