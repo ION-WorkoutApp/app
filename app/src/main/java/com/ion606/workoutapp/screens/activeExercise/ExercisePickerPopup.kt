@@ -261,6 +261,13 @@ class ExercisePickerPopup {
 
                             state.shouldLoadMore.value =
                                 ((state.currentPage.value + 1) < state.totalPages.value - 1 && !state.isLoading.value)
+                            state.triggerSearch.value = state.shouldLoadMore.value
+                            state.isLoading.value = false
+
+                            Log.d(
+                                TAG,
+                                "Current Page: ${state.currentPage.value}, Total Pages: ${state.totalPages.value}, has next page: ${state.shouldLoadMore.value} isLoading: ${state.isLoading.value}"
+                            )
                         }) { listState ->
                             LazyColumn(
                                 state = listState,
@@ -285,6 +292,7 @@ class ExercisePickerPopup {
                                     val text = when {
                                         state.isSearching.value -> "Loading..."
                                         state.searchQuery.value.isNotEmpty() -> "No exercises found"
+                                        currentCat.value.isNotEmpty() -> "No exercises found"
                                         else -> "Select a category to view exercises"
                                     }
                                     Text(text)

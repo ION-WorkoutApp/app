@@ -100,6 +100,12 @@ class WorkoutTimerObject(private val context: Context) {
         prefs.edit().putInt("time", this.time).apply()
         prefs.edit().putInt("totalTime", this.totalTime).apply()
     }
+
+    fun clear() {
+        val prefs = context.getSharedPreferences("timer", Context.MODE_PRIVATE)
+        prefs.edit().remove("time").commit();
+        prefs.edit().remove("totalTime").commit();
+    }
 }
 
 @Composable
@@ -307,6 +313,7 @@ class ExerciseScreen {
                 // End the workout without saving
                 LaunchedEffect("endworkout") {
                     coroutineScope.launch {
+                        workoutTime.clear();
                         dao.getAll().forEach { exercise ->
                             Log.d(TAG, "Deleting exercise: ${exercise.id}")
                             dao.delete(exercise)
