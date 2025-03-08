@@ -1,0 +1,31 @@
+name: Check App Changes
+description: Checks if files besides README, LICENSE, .github, and .gitignore have changed.
+inputs:
+  base-sha:
+    description: 'Base SHA to compare'
+    required: true
+  head-sha:
+    description: 'Head SHA to compare'
+    required: true
+outputs:
+  code_changed:
+    description: 'true if significant changes detected, else false'
+    value: ''
+runs:
+  using: "composite"
+  steps:
+    - name: Check for app changes
+      shell: bash
+      run: |
+        CHANGED_FILES=$(git diff --name-only ${{ inputs.base-sha }} ${{ inputs.head-sha }})
+        echo "Changed files:"
+        echo "$CHANGED_FILES"
+        # Exclude README.md, LICENSE, .gitignore, and the .github folder
+        CODE_CHANGED=$(echo "$CHANGED_FILES" | grep -Ev '^(README\.md|LICENSE|\.gitignore|\.github/.*)$' || true)
+        if [ -z "$CODE_CHANGED" ]; then
+          echo "No app changes detected. Skipping version check."
+          echo "code_changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "App changes detected."
+          echo "code_changed=true" >> $GITHUB_OUTPUT
+        fi

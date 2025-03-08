@@ -6,14 +6,19 @@ A self‑hosted workout application built with Kotlin that delivers an engaging,
 
 ## Table of Contents 📚
 
-- [Overview](#overview-)
-- [Features](#features-)
-- [Installation](#installation-)
-- [Usage](#usage-)
-- [Contributing](#contributing-)
-- [Code of Conduct](#code-of-conduct-)
-- [License](#license-)
-- [Contact](#contact-)
+- [ION Workout App - Front-End 💪](#ion-workout-app---front-end-)
+	- [Table of Contents 📚](#table-of-contents-)
+	- [Overview 🏋️‍♀️](#overview-️️)
+	- [Features ✨](#features-)
+	- [Installation 🛠️](#installation-️)
+		- [Prerequisites](#prerequisites)
+		- [Prerequisites](#prerequisites-1)
+		- [Setup Instructions](#setup-instructions)
+	- [Usage 📖](#usage-)
+	- [Contributing 🤝](#contributing-)
+	- [Code of Conduct 📜](#code-of-conduct-)
+	- [License ⚖️](#license-️)
+	- [Contact 📬](#contact-)
 
 ---
 
