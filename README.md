@@ -6,14 +6,19 @@ A self‑hosted workout application built with Kotlin that delivers an engaging,
 
 ## Table of Contents 📚
 
-- [Overview](#overview-)
-- [Features](#features-)
-- [Installation](#installation-)
-- [Usage](#usage-)
-- [Contributing](#contributing-)
-- [Code of Conduct](#code-of-conduct-)
-- [License](#license-)
-- [Contact](#contact-)
+- [ION Workout App - Front-End 💪](#ion-workout-app---front-end-)
+	- [Table of Contents 📚](#table-of-contents-)
+	- [Overview 🏋️‍♀️](#overview-️️)
+	- [Features ✨](#features-)
+	- [Installation 🛠️](#installation-️)
+		- [Prerequisites](#prerequisites)
+		- [Prerequisites](#prerequisites-1)
+		- [Setup Instructions](#setup-instructions)
+	- [Usage 📖](#usage-)
+	- [Contributing 🤝](#contributing-)
+	- [Code of Conduct 📜](#code-of-conduct-)
+	- [License ⚖️](#license-️)
+	- [Contact 📬](#contact-)
 
 ---
 
@@ -51,6 +56,9 @@ ION Workout App is a self‑hosted workout solution designed to help users track
 ---
 
 ## Installation 🛠️
+
+[![Build Check](https://github.com/ION-WorkoutApp/app/actions/workflows/build.yml/badge.svg)](https://github.com/ION-WorkoutApp/app/actions/workflows/build.yml)
+[![Dependencies Up to Date](https://github.com/ION-WorkoutApp/app/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/ION-WorkoutApp/app/actions/workflows/dependency-check.yml)
 
 ### Prerequisites
 

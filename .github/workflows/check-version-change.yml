@@ -14,8 +14,16 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check for app changes
+        id: changes
+        uses: ./.github/actions/check-app-changes
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+
       - name: Extract base versionName
         id: base_version
+        if: steps.changes.outputs.code_changed == 'true'
         run: |
           BASE_SHA=${{ github.event.pull_request.base.sha }}
           VERSION=$(git show "$BASE_SHA:app/build.gradle.kts" | grep -E 'versionName\s*=\s*"[^"]+"' | cut -d '"' -f 2)
@@ -23,12 +31,14 @@ jobs:
 
       - name: Extract head versionName
         id: head_version
+        if: steps.changes.outputs.code_changed == 'true'
         run: |
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
           VERSION=$(git show "$HEAD_SHA:app/build.gradle.kts" | grep -E 'versionName\s*=\s*"[^"]+"' | cut -d '"' -f 2)
           echo "HEAD_VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Compare versions
+        if: steps.changes.outputs.code_changed == 'true'
         run: |
           if [ "${{ steps.base_version.outputs.BASE_VERSION }}" = "${{ steps.head_version.outputs.HEAD_VERSION }}" ]; then
             echo "versionName (${{ steps.head_version.outputs.HEAD_VERSION }}) not updated"
