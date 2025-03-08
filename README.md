@@ -52,6 +52,9 @@ ION Workout App is a self‑hosted workout solution designed to help users track
 
 ## Installation 🛠️
 
+[![Build Check](https://github.com/ION-WorkoutApp/app/actions/workflows/build.yml/badge.svg)](https://github.com/ION-WorkoutApp/app/actions/workflows/build.yml)
+[![Dependencies Up to Date](https://github.com/ION-WorkoutApp/app/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/ION-WorkoutApp/app/actions/workflows/dependency-check.yml)
+
 ### Prerequisites
 
 > [!TIP]
